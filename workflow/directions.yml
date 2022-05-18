@@ -1,5 +1,0 @@
-THIS:
-  data = directory():
-    clusters = bundle("{chromosome}_chr_set.json")
-  features = directory():
-    features = bundle(["{cell_type}", "{feature_type}", {"feature_name"}])

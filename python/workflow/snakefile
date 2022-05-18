@@ -6,7 +6,7 @@ specs = glob_wildcards("./data/features/{cell_line}/{feature_type}/{file_name}")
 
 # Getting all the values from the wildcards
 CELL_LINES = specs.cell_line
-FEATURE_TYPES = specs.feature_type
+FEATURE_TYPES = specs.feature_typeW
 FILE_NAMES = specs.file_name
 
 features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))

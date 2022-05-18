@@ -1,0 +1,176 @@
+import os
+
+# the specification of the provided features
+# Grabbing the features which are in a RDA format.
+specs = glob_wildcards("data/features/{cell_line}/{feature_type}/{file_name}.{suffix}")
+
+# Getting all the values from the wildcards
+CELL_LINES = specs.cell_line
+FEATURE_TYPES = specs.feature_type
+FILE_NAMES = specs.file_name
+SUFFIXES = specs.suffix #! the suffixes need to be lowercased before they are used (some files are BED and other are 'bed')
+
+# Zipping them in a list of tuples
+WRAP_TASKS = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES, SUFFIXES))
+
+# The specificaiton provided by the clusters:
+CLUSTER_SPECS = glob_wildcards("data/clusters/{cell_line}/{cluster_file_name}.Rda")
+
+# This are the cell lines detected from the file names.
+CLUS_CELL_LINES =set(CLUSTER_SPECS.cell_line)
+
+# Prints text in Green
+def green(text:str) -> str:
+    return f"\033[32m{text}\033[0m"
+
+# Prints text in Yellow
+def yellow(text:str) -> str:
+    return f"\033[33m{text}\033[0m"
+
+# Prints text in red
+def red(text:str) -> str:
+    return f"\033[31m{text}\033[0m"
+
+# Logging the values:
+print(green("The following features will be used:"))
+for cell_line, feature_type, file_name, suffix in WRAP_TASKS:
+    print(f"\t-{cell_line} - {feature_type} - ({suffix} file)")
+
+print(green("The clusters from the following cell lines will be used:"))
+for cell_line in CLUS_CELL_LINES:
+    print(f"\t-{cell_line}")
+
+# Wraps the given features into a GenomicRange object to speed up further computations
+rule wrap_features:
+    input:
+        #The script for wrapping the features
+        script = "code/wrap_features.R",
+
+        # The features to wrap in a GenomicRange object
+        data = [
+            f"data/features/{cell_line}/{feature_type}/{file_name}.{suffix}"
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+
+    benchmark:
+        ".benchmarks/wrap_features.tsv"
+
+    output:
+        name = [
+            (f"data/tmp/wrapped_features/{cell_line}/{feature_type}/{file_name}.Rda")
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+    run:
+        print("Wrapping Features:")
+
+        # Looping over the 
+        for cell_line, feature_type, file_name, suffix in WRAP_TASKS:
+            input_file = f"data/features/{cell_line}/{feature_type}/{file_name}.{suffix}"
+            output_file = f"data/tmp/wrapped_features/{cell_line}/{feature_type}/{file_name}.Rda"
+
+            print("- Cell Line ", yellow(cell_line), ", with ", green(feature_type), " features:", sep = "")
+            shell("Rscript {input.script}" + f" --data {input_file} --output {output_file} --line {cell_line} --feature {feature_type} --extension {suffix.lower()}")
+
+# Counts the number of features for each annotation category.
+rule count_annotations:
+    input: 
+        script = "code/count_annotations.R",
+
+        # The wrapped features to count the annotation one.
+        data = [
+            f"data/tmp/wrapped_features/{cell_line}/{feature_type}/{file_name}.Rda"
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+        annotation_data = "data/annotation/fn_BED/"
+
+    output:         
+        name =[
+            (f"data/tmp/annotation_counts/{cell_line}/{feature_type}/counts.tsv")
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+    benchmark:
+        ".benchmarks/count_annotations.tsv"
+    params:
+        # The seed for the random number generator.
+        seed = 12345
+    run:
+    
+        print("Counting Annotations:")
+        for cell_line, feature_type, file_name, suffix in WRAP_TASKS:
+            
+            # The input file
+            input_file = f"data/tmp/wrapped_features/{cell_line}/{feature_type}/{file_name}.Rda"
+
+            # The output file
+            output_file = f"data/tmp/annotation_counts/{cell_line}/{feature_type}/counts.tsv"
+
+            # Logging:
+            print("- Cell Line ", yellow(cell_line), ", with ", green(feature_type), " features:", sep = "")
+            
+            # Running the script
+            shell("Rscript {input.script}" + f" --input {input_file} --output {output_file} --annotation {input.annotation_data} --seed {params.seed}")
+
+# Wraps the raw cluster files into genomicranges objects.
+rule wrap_clusters:
+    input:
+        #The script 
+        script = "code/wrap_clusters.R",
+        raw_folder = [f"data/clusters/{cell_line}/" for cell_line in CLUS_CELL_LINES],
+    output:
+        out_folder =  [(directory(f"data/tmp/wrapped_clusters/{cell_line}/") for cell_line in CLUS_CELL_LINES)],
+    params:
+        # Whether to show progress.
+        show_progress = True,
+    
+    benchmark:
+        ".benchmarks/wrap_clusters.tsv"
+    run:
+
+        print("Wrapping Clusters:")
+        for cell_line in CLUS_CELL_LINES:
+            input_folder = f"data/clusters/{cell_line}/"
+            output_folder = f"data/tmp/wrapped_clusters/{cell_line}/"
+
+            print("- Cell Line ", yellow(cell_line), ":", sep = "")
+            shell("Rscript {input.script}" + f" --input {input_folder} --output {output_folder} --line {cell_line}" +( "--progress" if params.show_progress else ""))
+
+
+rule compute_pvalue:
+    input: 
+        # The script
+        script = "code/compute_pvalue_future.R",
+        wrapped_clusters = [((f"data/tmp/wrapped_clusters/{cell_line}/") for cell_line in CLUS_CELL_LINES)],
+        genome = "data/annotation/hg19.genome",
+        wrapped_features = [
+            f"data/tmp/wrapped_features/{cell_line}/{feature_type}/{file_name}.Rda"
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+        annotations = [
+            f"data/tmp/annotation_counts/{cell_line}/{feature_type}/counts.tsv"
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+        function_path = "data/annotation/fn_BED/",
+    params:
+        seed = 12345,
+        bootstraps = 100
+    output:
+        name =  [
+            (f"data/pvalues/{cell_line}.{feature_type}.tsv")
+            for cell_line, feature_type, file_name, suffix in WRAP_TASKS
+        ],
+
+    benchmark:
+        ".benchmarks/compute_pvalue.tsv"
+
+    run:
+        print("Computing p-values:")
+        for cell_line, feature_type, file_name, suffix in WRAP_TASKS:
+            feature_input_file = f"data/tmp/wrapped_features/{cell_line}/{feature_type}/{file_name}.Rda"
+            cluster_input_folder = f"data/tmp/wrapped_clusters/{cell_line}/"
+
+            annotation_input_file = f"data/tmp/annotation_counts/{cell_line}/{feature_type}/counts.tsv"
+
+            out_file = f"data/pvalues/{cell_line}.{feature_type}.tsv"
+
+            print("- Cell Line ", yellow(cell_line), ", with ", green(feature_type), " features:", sep = "")
+            shell("Rscript {input.script} --function_path {input.function_path} --genome {input.genome} --seed {params.seed} --bootstraps {params.bootstraps} --chromosomes chr22,chr21" + f" --annotations {annotation_input_file} --feature {feature_input_file} --clusters {cluster_input_folder}  --workers 3 --output {out_file}")
