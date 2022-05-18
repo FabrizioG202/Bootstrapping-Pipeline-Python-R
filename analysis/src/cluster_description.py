@@ -1,6 +1,10 @@
 # %%
-import src.utils
+try:
+    import src.utils
+except:
+    import utils
 import json
+import pyranges as pr
 
 class Cluster:
     name : str
@@ -18,6 +22,28 @@ class Cluster:
     def __repr__(self):
         return f"{self.name}, resolution: {self.resolution}, bins: {self.bins}"
 
+    # provides an iterator over the bins starts and ends
+    def __iter__(self):
+        return iter(zip(self.bins, [x + int(self.resolution) for x in self.bins]))
+
+    # get the total length
+    @property
+    def total_length(self):
+        return self.resolution * len(self.bins)
+
+    def __len__(self):
+        return len(self.bins)
+
+    def find_overlaps(self, chromosome : str, features : pr.PyRanges):
+
+        # build the pyranges for the cluster
+        starts, ends = zip(*self)
+        cluster_range = pr.PyRanges(chromosomes = [chromosome] * len(starts), starts = starts, ends = ends)
+
+        # Check the overlaps:
+        overlaps = features.overlap(cluster_range)
+        
+        return overlaps
 
 # %%
 class ClustersDescription:
