@@ -1,3 +1,7 @@
+# Adding the configuration file.
+configfile: "./workflow/config.yaml"
+
+# Importing the OS module.
 import os
 
 # the specification of the provided features
@@ -18,6 +22,8 @@ CLUSTER_SPECS = glob_wildcards("data/clusters/{cell_line}/{cluster_file_name}.Rd
 
 # This are the cell lines detected from the file names.
 CLUS_CELL_LINES =set(CLUSTER_SPECS.cell_line)
+
+BOOTSTRAPS = config["bootstraps"]
 
 # Prints text in Green
 def green(text:str) -> str:
@@ -152,7 +158,7 @@ rule compute_pvalue:
         function_path = "data/annotation/fn_BED/",
     params:
         seed = 12345,
-        bootstraps = 100
+        bootstraps = BOOTSTRAPS
     output:
         name =  [
             (f"data/pvalues/{cell_line}.{feature_type}.tsv")

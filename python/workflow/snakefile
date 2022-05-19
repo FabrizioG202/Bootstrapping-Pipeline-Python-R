@@ -1,18 +1,7 @@
-import os
+# Adding the configuration file.
+configfile: "./workflow/config.yaml"
 
-# the specification of the provided features
-# Grabbing the features which are in a RDA format.
-specs = glob_wildcards("./data/features/{cell_line}/{feature_type}/{file_name}")
-
-# Getting all the values from the wildcards
-CELL_LINES = specs.cell_line
-FEATURE_TYPES = specs.feature_typeW
-FILE_NAMES = specs.file_name
-
-features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
-
-print(features)
-
+# Color stuff.
 def red(text):
     return("\033[91m{}\033[00m".format(text))
 
@@ -22,31 +11,50 @@ def green(text):
 def yellow(text):
     return("\033[93m{}\033[00m".format(text))
 
+# importing stuff
+import os
+
+# the specification of the provided features
+# Grabbing the features which are in a RDA format.
+specs = glob_wildcards("./data/features/{cell_line}/{feature_type}/{file_name}")
+
+# Getting all the values from the wildcards
+CELL_LINES = specs.cell_line
+FEATURE_TYPES = specs.feature_type
+FILE_NAMES = specs.file_name
+features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
+
+# Reading the thing from the configuration file.
+BOOTSTRAPS = config["bootstraps"]
+print("Running Python Pipeline with {} bootstraps".format(yellow(BOOTSTRAPS)))
+
+# Annotating the files.
 rule annotate_features:
     input: 
-        files = [f"data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
+        files = [f"../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
     output:
-        files = [f"data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
+        files = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
     run:
         for cell_line, feature_type, file_name in features:
             print(f"Annotating {cell_line} {feature_type} {yellow(file_name)}")
-            in_file = f"data/features/{cell_line}/{feature_type}/{file_name}"
-            out_file = f"data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
+            in_file = f"../data/features/{cell_line}/{feature_type}/{file_name}"
+            out_file = f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
 
-            # Checking if it exists already.
+            # Checking if it exists already (this is done because snakemake deletes the file for no reason if nothing has changed)
             if(os.path.exists(out_file)):
                 print(f"{green(out_file)} already exists, skipping")
                 continue
 
             # Generating it.
-            shell(f"Rscript annotate.R -i {in_file} -o {out_file} -a ./data/annotations/")
+            shell(f"Rscript annotate.R -i {in_file} -o {out_file} -a ../data/annotations/")
 
+# Computing the pvalues.
 rule compute_pvalue:
     input:
-        counts = [f"data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
+        counts = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
     params:
-        bootstraps = 100_000
+        bootstraps = BOOTSTRAPS
     output:
-        directory("results/")
+        directory("../results/")
     shell:
         "python main.py -n {params.bootstraps}"

@@ -1,0 +1,9 @@
+# Python temporary stuff.
+python/__pycache__
+python/.snakemake
+
+# R Temporary stuff
+R/.snakemake
+
+# Other temporary/useless stuff.
+.vscode/

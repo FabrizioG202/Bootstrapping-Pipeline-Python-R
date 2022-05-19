@@ -6,14 +6,14 @@ if __name__ == "__main__":
 
     ### Read the command line arguments
     parser = argparse.ArgumentParser(description="Compute the p-value of a feature in a genome.")
-    parser.add_argument("-f", "--feature", help="The path to the file containing the data.", required=False, default="./data/features/")
-    parser.add_argument("-a", "--annotation", help="The path to the file containing the annotation.", required=False, default="./data/counts/")
-    parser.add_argument("-g", "--genome", help="The path to the genome file.", required=False, default="./data/hg19.genome")
-    parser.add_argument("-c", "--cluster", help="The path to the cluster folder.", required=False, default="./data/clusters/")
+    parser.add_argument("-f", "--feature", help="The path to the file containing the data.", required=False, default="../data/features/")
+    parser.add_argument("-a", "--annotation", help="The path to the file containing the annotation.", required=False, default="../data/counts/")
+    parser.add_argument("-g", "--genome", help="The path to the genome file.", required=False, default="../data/hg19.genome")
+    parser.add_argument("-c", "--cluster", help="The path to the cluster folder.", required=False, default="../data/clusters/")
     parser.add_argument("-n", "--n", help="The number of bootstrap iterations.", required=False, default=1000)
     parser.add_argument("-t", "--t", help="The number of threads.", required=False, default=1)
-    parser.add_argument("-u", "--function", help="The path to the folder containing the functions.", required=False, default="./data/annotations/")
-    parser.add_argument("-r", "--result", help="The path to the folder containing the results.", required=False, default="./results/")
+    parser.add_argument("-u", "--function", help="The path to the folder containing the functions.", required=False, default="../data/annotations/")
+    parser.add_argument("-r", "--result", help="The path to the folder containing the results.", required=False, default="../results/")
     args = parser.parse_args()
 
     # check that the genome file exists

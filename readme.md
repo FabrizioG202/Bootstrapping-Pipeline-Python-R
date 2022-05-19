@@ -1,12 +1,14 @@
 # Bootstrapping Pipeline for cluster enrichment assessment.
 The following pipeline allows to assess the enrichment of a cluster with respect to a list of provided features. It can work on multilple cell lines and multiple feature types at the same time.
-It is currently split between a python and an R version, to run either one, run snakemake in the corresponding directory.
+It is currently split between a python and an R version, to run either one, run _snakemake compute_pvalue_ in the corresponding directory.
+
 ## Python: 
 The python version is based upon PyRanges and NCLS.
 ## R:
 The R version is based upon the R package GenomicRanges.
 
-
+## General workflow:
+Each Version of the pipeline contains a config file to specify the number of bootstraps. _The 2 different pipelines produce different temporary files right now, so they are not interoperable._
 
 # Data Structure:
 The main data folder has the following structure:

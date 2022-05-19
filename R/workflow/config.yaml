@@ -1,0 +1,2 @@
+# Adding the configuration file.
+configfile: "./workflow/config.yaml"
