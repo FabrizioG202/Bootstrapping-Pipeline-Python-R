@@ -7,3 +7,5 @@ R/.snakemake
 
 # Other temporary/useless stuff.
 .vscode/
+
+data/tmp/

@@ -102,7 +102,6 @@ wrap_features_fn <- function(input_file, extension) {
 }
 
 # The input file, read from the arguments
-input_filepath <- "data/features/HMEC/CAGE/features.Rda"
 input_filepath <- opt$data
 
 # Parsing the output path from the provided argument
@@ -110,7 +109,6 @@ output_filepath <- opt$output
 
 # the file extension
 ext <- opt$extension
-ext <- "rda"
 
 # Running the function
 wrapped_features <- wrap_features_fn(input_filepath, ext)

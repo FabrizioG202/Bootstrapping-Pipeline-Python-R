@@ -82,8 +82,6 @@ annotate_features <- function(trascription_database, features, function_files) {
     rm(ChIPseekerEnv, envir = globalenv())
     rm(n_5, n_3, n_exon, n_intron, n_1kb, n_2kb, n_3kb, n_down, n_inter)
 
-    # Keep only the features which are greater than 0
-    n_vec <- n_vec[n_vec > 0]
     return(n_vec)
 }
 
