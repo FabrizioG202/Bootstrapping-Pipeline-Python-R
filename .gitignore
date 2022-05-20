@@ -9,3 +9,4 @@ R/.snakemake
 .vscode/
 
 data/tmp/
+analysis/src/__pycache__
