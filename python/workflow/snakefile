@@ -1,6 +1,17 @@
 # Adding the configuration file.
 configfile: "./workflow/config.yaml"
 
+# import module common from path: "../../common"
+import importlib.util
+import sys, os
+spec = importlib.util.spec_from_file_location("parsers", "../common/parsers.py")
+parsers = importlib.util.module_from_spec(spec)
+sys.modules["parsers"] = parsers
+spec.loader.exec_module(parsers)
+
+# The path for the filtering.
+FILTER_PATH = "./workflow/filter.txt"
+
 # Color stuff.
 def red(text):
     return("\033[91m{}\033[00m".format(text))
@@ -16,13 +27,17 @@ import os
 
 # the specification of the provided features
 # Grabbing the features which are in a RDA format.
-specs = glob_wildcards("./data/features/{cell_line}/{feature_type}/{file_name}")
+specs = glob_wildcards("../data/features/{cell_line}/{feature_type}/{file_name}")
 
 # Getting all the values from the wildcards
 CELL_LINES = specs.cell_line
 FEATURE_TYPES = specs.feature_type
 FILE_NAMES = specs.file_name
 features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
+before_ = len(features)
+features = parsers.parse_filter_file(FILTER_PATH).filter(features)
+print(f"{yellow('Filtered')} {before_} features to {len(features)} features. (total {yellow(-len(features) + before_)} removed)")
+print(red(features))
 
 # Reading the thing from the configuration file.
 BOOTSTRAPS = config["bootstraps"]
@@ -35,6 +50,7 @@ rule annotate_features:
     output:
         files = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
     run:
+        print(blue(features))
         for cell_line, feature_type, file_name in features:
             print(f"Annotating {cell_line} {feature_type} {yellow(file_name)}")
             in_file = f"../data/features/{cell_line}/{feature_type}/{file_name}"

@@ -48,6 +48,9 @@ The main data folder has the following structure:
                 - ...
             - hg19.genome
 
+# Feature Selection:
+The user can choose which features to run the pipeline on. To do so, there is a filter.txt in the same folder as the snakefile data for each pipeline. The syntax is explained in the file itself. *The filtering currently only works for the python version.*
+
 The pipeline will generate a table in the following format "CELL_LINE.FEATURE.tsv". The table will contain the following columns by default: chromosome, cluster_name, p_value.
 
 # Available Analysis workflows:

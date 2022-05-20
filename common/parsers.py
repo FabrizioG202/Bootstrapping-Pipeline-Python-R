@@ -76,6 +76,13 @@ def parse_filter_file(path : str):
             if line.strip() == "":
                 continue
 
+            # Skip comments (lines starting with ?)
+            if line.startswith("?"):
+                continue
+
+            #Strip the line of any comment, from ? to the end of the line
+            line = line.split("?")[0].strip()
+
             # read the mode
             if line.startswith("#"):
                 mode = line.strip()[1:].lower().replace(":", "")
@@ -98,19 +105,3 @@ def parse_filter_file(path : str):
                     else:
                         included_target.append(other[0].strip())
     return ExclusionPattern(excluded_lines, included_lines, excluded_types, included_types, excluded_target, included_target)
-
-PATH = "./filter.txt"
-
-print(parse_filter_file(PATH))
-
-requests = [
-    ("HMEC", "CAGE", "hmec_cage.txt"),
-    ("H1", "CAGE", "h1_cage.txt"),
-    ("HMEC", "CTCF", "hmec_ctcf.txt"),
-    ("H1", "CTCF", "h1_ctcf.txt"),
-    ("HMEC", "DNase", "hmec_dnase.txt"),
-    ("H1", "DNase", "h1_dnase.txt"),
-]
-
-print("Filtering: ")
-print("\n".join(map(str, parse_filter_file(PATH).filter(requests))))
