@@ -49,3 +49,5 @@ The main data folder has the following structure:
             - hg19.genome
 
 The pipeline will generate a table in the following format "CELL_LINE.FEATURE.tsv". The table will contain the following columns by default: chromosome, cluster_name, p_value.
+
+THe
