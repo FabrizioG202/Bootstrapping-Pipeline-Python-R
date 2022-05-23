@@ -22,6 +22,9 @@ def green(text):
 def yellow(text):
     return("\033[93m{}\033[00m".format(text))
 
+def blue(text):
+    return("\033[94m{}\033[00m".format(text))
+
 # importing stuff
 import os
 
@@ -49,6 +52,11 @@ rule annotate_features:
         files = [f"../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
     output:
         files = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
+    
+    
+    benchmark:
+        "../benchmarks/annotate_features.benchmark.txt"
+    
     run:
         print(blue(features))
         for cell_line, feature_type, file_name in features:
@@ -64,13 +72,19 @@ rule annotate_features:
             # Generating it.
             shell(f"Rscript annotate.R -i {in_file} -o {out_file} -a ../data/annotations/")
 
+
 # Computing the pvalues.
 rule compute_pvalue:
     input:
         counts = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
     params:
         bootstraps = BOOTSTRAPS
+    
+    benchmark:
+        "../benchmarks/compute_pvalue.benchmark.txt"
+    
     output:
         directory("../results/")
     shell:
         "python main.py -n {params.bootstraps}"
+
