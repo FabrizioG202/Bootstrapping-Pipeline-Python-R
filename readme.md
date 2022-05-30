@@ -55,11 +55,19 @@ The pipeline will generate a table in the following format "CELL_LINE.FEATURE.ts
 
 # Available Analysis workflows:
 The analysis folder contains script which can be used to perform downstream analysis of the results produced with the pipeline. Each script expects by default the scripts to be present in the ./results/ folder (the same as the pipeline output one) but a custom path can be passed via command line arguments. (Any of the script is available both as a command-line python script and as a jupyter notebook).
+
 ## FDR and filtering (_fdr_and_filtering_):
-This script allows to parse the tables and perform a multiple testing correction. It also allows to filter the results based on a given p-value, q-value (after applying FDR) and chromosome threshold.
+This script allows to parse the tables and perform a multiple testing correction (whole genome or chromosome based). It also allows to filter the results based on a given p-value, q-value (after applying FDR) and chromosome threshold. The script can also be used to export the enriched clusters to a *CLUS* file which lists all the enriched clusters found in each chromosome in a TSV-like format:
+    
+    chr1    cluster_name	cluster_name_2    cluster_name_3    ...
+    chr2    cluster_name	cluster_name_2    ...
+    ...
+    chrN    cluster_name	cluster_name_2    ...
+
+Such CLUS file can be used by any downstream analysis script.
+
 ## Gene Set Enrichment Analysis (_gene_set_enrichment_):
 This script allows to perform a gene set enrichment analysis on the results. It expects the gene set to be present in the ./analysis/data/ folder.
-## Plotting (_TODO_):
-This script allows to plot the results of the pipeline. It expects the results to be present in the ./results/ folder.
+
 ## Enhance/TSS enrichment analysis (_TODO_):
-This script allows to perform a peak category enrichment analysis on the results. It expects the gene set and the peak/TSS-Enhancer table to be present in the ./analysis/data/ folder.
+This script allows to perform a peak category enrichment analysis on the results. It works by perfor\ming a χ² test on the TSS/Enhancer counts (based on FANTOM5 data).

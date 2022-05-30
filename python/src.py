@@ -176,6 +176,7 @@ class OverlapCounter:
         batch_splits = np.split(features, np.where(np.diff(features[:, 3]) != 0)[0] + 1, axis=0)
         for i, batch in enumerate(batch_splits):
             l_idx_, r_idx_ = self.cluster_ncls.all_overlaps_both(batch[:, 0].T, batch[:, 1].T, batch[:, 2].T)
+    
             r_idx_ = self.cluster_indexer[r_idx_]
 
             # this is a better way of finding the unique indices.
@@ -293,7 +294,7 @@ class BedShuffler:
         # the shuffled entries, in the shape
         # (start, end, index, batch_id)
         shuffled_entries = np.zeros((len(features) * batch_size, 4)[::-1], dtype=np.int64).T
-
+        
         index = 0
         # Prepare the intervals:
         for j in range(batch_size):
@@ -390,6 +391,16 @@ def red(text: str):
 
 def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, *, batch_size=1, genome_path: str, annotation_path: str, function_path: str, enable_tqdm: bool = True):
 
+    # Print all the parameters:
+    # print("Features:", features_path)
+    # print("Chromosome:", chromo)
+    # print("Cluster:", cluster_path)
+    # print("Genome:", genome_path)
+    # print("Annotation:", annotation_path)
+    # print("Function:", function_path)
+    # print("Batch size:", batch_size)
+    # print("Enable tqdm:", enable_tqdm)
+
     ### General Variables.
     verbose = True
 
@@ -398,7 +409,7 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
 
     ### Reading the genome
     genome = pd.read_csv(genome_path, sep="\t", header=None, names=["chr", "size"]).set_index("chr").to_dict()["size"]
-
+ 
     ### Importing the features
     features_ = pr.read_bed(features_path)
     features_ = features_[features_.Chromosome == chromo]  ### Filtering out by chromosome.
@@ -441,9 +452,7 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
     # So if batch_count == 4, we will do 4 loops.
     batch_count = n // batch_size
 
-    # The progress bar, it's manual as it is a nested for loop.
-    if enable_tqdm:
-        progress_bar = tqdm(total=n, desc=f"{red(chromo)} ", position=0)
+    
 
     # Creating the overlap counter
     overlap_counter = OverlapCounter(clusters, cluster_indexer)
@@ -456,7 +465,6 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_5utr.BED"), _annotations["5utr"])
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_down.BED"), _annotations["down"])
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_exon.BED"), _annotations["exon"])
-
     shuffler.add_exclude(os.path.join(function_path, chromo, f"{chromo}_inter_no.BED"), _annotations["inter_no"])
 
     # include intron, prom, prom12, prom23:
@@ -465,12 +473,19 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_prom12.BED"), _annotations["prom12"])
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_prom23.BED"), _annotations["prom23"])
 
+    enable_tqdm = True
+    # The progress bar, it's manual as it is a nested for loop.
+    if enable_tqdm:
+        progress_bar = tqdm(total=n, desc=f"{red(chromo)} ", position=0)
+
     # Looping
     for _ in range(batch_count):
+  
 
         ### Shuffling the features
         shuffled_entries = shuffler.shuffle(batch_size=batch_size)
         shuffled_entries[:, 1] += 1  ### Adding the features.
+
 
         ### Counting the Overlaps
         overlaps = overlap_counter.count_overlaps(shuffled_entries)
@@ -479,8 +494,10 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
         if enable_tqdm:
             progress_bar.update(batch_size)
 
+
         ### updates the odds ratio.
         odds_ratio = calculate_odds_ratio(overlaps, observed_overlaps)
+
 
         ### Adding the odds ratio to the dataframe.
         merged_clusters["odds_ratio"] += odds_ratio
@@ -496,4 +513,11 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
 
 
 if __name__ == "__main__":
-    p_values = compute_p_value(10000, FEATURE_PATH, "chr22", genome_path=GENOME_PATH, batch_size=50)
+    FEATURE_PATH = "../data/features/H1/CTCF/ENCFF402JJK.bed"
+    GENOME_PATH = "../data/hg19.genome"
+    ANNOTATION_PATH = "../data/counts/H1/CTCF/ENCFF402JJK.bed.counts.tsv"
+    FUNCTION_PATH = "../data/annotations/"
+
+
+    CLUSTER_PATH = "../data/clusters/H1/chr10_spec_res.json"
+    p_values = compute_p_value(10000, chromo = "chr10", features_path= FEATURE_PATH, genome_path= GENOME_PATH, annotation_path= ANNOTATION_PATH, function_path= FUNCTION_PATH, cluster_path= CLUSTER_PATH)

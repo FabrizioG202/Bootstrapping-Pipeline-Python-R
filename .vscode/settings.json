@@ -1,4 +1,4 @@
 {
     "python.formatting.provider": "autopep8",
-    "workbench.colorTheme": "GitHub Dark Dimmed"
+    "workbench.colorTheme": "Default Dark+"
 }
