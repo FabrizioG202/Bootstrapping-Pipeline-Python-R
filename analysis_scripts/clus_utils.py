@@ -1,5 +1,6 @@
 #%%
 from matplotlib.cbook import flatten
+from src.utils import sort_by_chromosome
 
 
 def intersect_clusters(clus_files  : list[dict[str, list[str]]]) -> dict[str, list[str]]:
@@ -60,12 +61,14 @@ if __name__ == "__main__":
             clusters = intersect_clusters([parse_clus_file(f) for f in clus_files])
             save_clus_file(out_path, clusters)
 
+        case [_, "sortByChromo", clus_file]:
+            clusters = parse_clus_file(clus_file)
+            clusters = sort_by_chromosome(clusters)
+            save_clus_file(clus_file, clusters)
+
         case [_, "help"] | _:
             print("""
             Usage:
                 clus_utils.py [intersectClus] [out_path] [clus_files...]
                 clus_utils.py help
             """)
-
-        
-        
