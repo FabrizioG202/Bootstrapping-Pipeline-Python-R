@@ -10,3 +10,4 @@ R/.snakemake
 
 data/tmp/
 analysis/src/__pycache__
+analysis_scripts/src/__pycache__/

@@ -371,7 +371,6 @@ def calculate_odds_ratio(counts: np.ndarray, observed: np.ndarray) -> np.ndarray
     # Returning the array of odds ratios
     return out
 
-
 def read_annotations(path: str, _chromo: str):
     # Reading the annotations from the annotation.tsv file - (boilerplate code)
     # + Renaming the columns to remove the placeholder j
@@ -390,16 +389,6 @@ def red(text: str):
     return "\033[31m" + text + "\033[0m"
 
 def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, *, batch_size=1, genome_path: str, annotation_path: str, function_path: str, enable_tqdm: bool = True):
-
-    # Print all the parameters:
-    # print("Features:", features_path)
-    # print("Chromosome:", chromo)
-    # print("Cluster:", cluster_path)
-    # print("Genome:", genome_path)
-    # print("Annotation:", annotation_path)
-    # print("Function:", function_path)
-    # print("Batch size:", batch_size)
-    # print("Enable tqdm:", enable_tqdm)
 
     ### General Variables.
     verbose = True
@@ -452,8 +441,6 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
     # So if batch_count == 4, we will do 4 loops.
     batch_count = n // batch_size
 
-    
-
     # Creating the overlap counter
     overlap_counter = OverlapCounter(clusters, cluster_indexer)
 
@@ -473,19 +460,19 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_prom12.BED"), _annotations["prom12"])
     shuffler.add_include(os.path.join(function_path, chromo, f"{chromo}_prom23.BED"), _annotations["prom23"])
 
+    
     enable_tqdm = True
+    
     # The progress bar, it's manual as it is a nested for loop.
     if enable_tqdm:
         progress_bar = tqdm(total=n, desc=f"{red(chromo)} ", position=0)
 
     # Looping
     for _ in range(batch_count):
-  
 
         ### Shuffling the features
         shuffled_entries = shuffler.shuffle(batch_size=batch_size)
-        shuffled_entries[:, 1] += 1  ### Adding the features.
-
+        shuffled_entries[:, 1] += 1  ### 1 is added to match the results from GenomicRanges
 
         ### Counting the Overlaps
         overlaps = overlap_counter.count_overlaps(shuffled_entries)
@@ -511,13 +498,11 @@ def compute_p_value(n: int, features_path: str, chromo: str, cluster_path: str, 
 
     return merged_clusters
 
-
 if __name__ == "__main__":
     FEATURE_PATH = "../data/features/H1/CTCF/ENCFF402JJK.bed"
-    GENOME_PATH = "../data/hg19.genome"
     ANNOTATION_PATH = "../data/counts/H1/CTCF/ENCFF402JJK.bed.counts.tsv"
+    GENOME_PATH = "../data/hg19.genome"
     FUNCTION_PATH = "../data/annotations/"
-
-
+    
     CLUSTER_PATH = "../data/clusters/H1/chr10_spec_res.json"
     p_values = compute_p_value(10000, chromo = "chr10", features_path= FEATURE_PATH, genome_path= GENOME_PATH, annotation_path= ANNOTATION_PATH, function_path= FUNCTION_PATH, cluster_path= CLUSTER_PATH)

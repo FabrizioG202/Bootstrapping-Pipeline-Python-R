@@ -31,6 +31,8 @@ import os
 # the specification of the provided features
 # Grabbing the features which are in a RDA format.
 specs = glob_wildcards("../data/features/{cell_line}/{feature_type}/{file_name}")
+def italic(text):
+    return("\033[3m{}\033[00m".format(text))
 
 # Getting all the values from the wildcards
 CELL_LINES = specs.cell_line
@@ -39,12 +41,50 @@ FILE_NAMES = specs.file_name
 features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
 before_ = len(features)
 features = parsers.parse_filter_file(FILTER_PATH).filter(features)
-print(f"{yellow('Filtered')} {before_} features to {len(features)} features. (total {yellow(-len(features) + before_)} removed)")
-print(red(features))
+print(f"{yellow('Filtering done: ')} from {before_} features to {len(features)} features. (total {yellow(-len(features) + before_)} removed)")
+print("\nUsing this files:")
+for cell_line, feature_type, file_name in features:
+    print(f"{red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
 
 # Reading the thing from the configuration file.
 BOOTSTRAPS = config["bootstraps"]
+print()
 print("Running Python Pipeline with {} bootstraps".format(yellow(BOOTSTRAPS)))
+print()
+
+# Computing the pvalues.
+rule compute_pvalue:
+    input:
+        counts = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
+        files = [f"../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
+    params:
+        bootstraps = BOOTSTRAPS
+    
+    benchmark:
+        "../benchmarks/compute_pvalue.benchmark.txt"
+    
+    output:
+        directory("../results/")
+    run:
+        for cell_line, feature_type, file_name in features:
+            print(f"Computing pvalues for {red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
+           
+            ### The file containing the counts. (--counts)
+            counts_file = f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
+
+            ### The file containing the features. (--features)
+            features_file = f"../data/features/{cell_line}/{feature_type}/{file_name}"
+
+            ### The folder containing the clusters. (--clusters)
+            clusters_file = f"../data/clusters/{cell_line}/"
+
+            ### The output tsv file (--output)
+            output_file = f"../results/{cell_line}.{feature_type}.tsv"
+            
+            ### Running the file
+            shell(f"python main.py -a {counts_file} -f {features_file} -o {output_file} -n {BOOTSTRAPS} -c {clusters_file}")
+            print("Saved to: {}".format(blue(output_file)))
+            print()
 
 # Annotating the files.
 rule annotate_features:
@@ -53,14 +93,12 @@ rule annotate_features:
     output:
         files = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
     
-    
     benchmark:
         "../benchmarks/annotate_features.benchmark.txt"
     
     run:
-        print(blue(features))
         for cell_line, feature_type, file_name in features:
-            print(f"Annotating {cell_line} {feature_type} {yellow(file_name)}")
+            print(f"Annotating {red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
             in_file = f"../data/features/{cell_line}/{feature_type}/{file_name}"
             out_file = f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
 
@@ -71,20 +109,3 @@ rule annotate_features:
 
             # Generating it.
             shell(f"Rscript annotate.R -i {in_file} -o {out_file} -a ../data/annotations/")
-
-
-# Computing the pvalues.
-rule compute_pvalue:
-    input:
-        counts = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
-    params:
-        bootstraps = BOOTSTRAPS
-    
-    benchmark:
-        "../benchmarks/compute_pvalue.benchmark.txt"
-    
-    output:
-        directory("../results/")
-    shell:
-        "python main.py -n {params.bootstraps}"
-

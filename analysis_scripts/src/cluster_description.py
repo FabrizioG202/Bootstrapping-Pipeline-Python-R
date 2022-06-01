@@ -80,4 +80,3 @@ class ClustersDescription:
 
     def bins_of(self, cluster : str):
         return self.members[cluster].bins
-
