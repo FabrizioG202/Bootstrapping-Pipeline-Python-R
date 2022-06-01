@@ -19,9 +19,10 @@ GO_set_enrich_fn <- function(cl_set_gene, cage_active_genes_vec, GOBP_set) {
   })
   clusterExport(cl, c("cl_set_gene", "cage_active_genes_vec"), envir = fn_env)
   go_pval <- parLapply(cl, GOBP_set, function(tmp_set) {
-    hitInSample <- sum(cl_set_gene %in% tmp_set)
-    sampleSize <- length(cl_set_gene)
-    hitInPop <- sum(cage_active_genes_vec %in% tmp_set)
+    hitInSample <- sum(cl_set_gene %in% tmp_set) # # of unique genes in enriched clusters that are in the provided GO BP set
+    
+    sampleSize <- length(cl_set_gene) # # of unique genes in all clusters
+    hitInPop <- sum(cage_active_genes_vec %in% tmp_set) # # of unique genes in the background are in the provided GO BP set
     failInPop <- length(cage_active_genes_vec) - hitInPop
     p_val <- phyper(hitInSample - 1, hitInPop, failInPop, sampleSize, lower.tail = FALSE)
     OR_GO <- (hitInSample / sampleSize) / (hitInPop / length(cage_active_genes_vec))
@@ -59,7 +60,6 @@ foreground_gene_vec <- unique(unlist(res_foreground_gene_tbl$entrez.content))
 
 # Convert background table as character vector of background genes
 background_gene_vec <- unique(unlist(mcols(background_GRange)$entrez))
-
 
 path_tbl <- GO_set_enrich_fn(foreground_gene_vec, background_gene_vec, Gene_set_l)
 print(path_tbl %>%

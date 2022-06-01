@@ -191,6 +191,11 @@ class ResultsTable:
 #%%
 import sys
 
+def replace_extension(path, extension : str):
+    parts = path.split(".")
+    parts[-1] = extension
+    return ".".join(parts)
+
 if __name__ == "__main__":
 
     match sys.argv:
@@ -235,6 +240,11 @@ if __name__ == "__main__":
             # save_path
             save_path = args[0] if len(args) != 0 else file_path.replace(".tsv", f"_filtered_{parameter}_{action}_{cut_off}.tsv")
             table.save(save_path)
+
+        case [_, "toClus" | "2Clus", file_path, *args]:
+            table = ResultsTable.from_file(file_path)
+            save_path = args[0] if len(args) != 0 else replace_extension(file_path, "clus")
+            table.write_clus_file(save_path)
 
         case [_, "--help" | "--h" | "-h" | "-help"]:
             print("""
