@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
         case [_, "--help" | "--h" | "-h" | "-help"]:
             print("""
-            Usage: python ResultsTable.py [OPTIONS]
+            Usage: python parse_results.py [OPTIONS]
             Options:
                 applyFDR <file_path> <fdr_mode> [save_path]
                 filter <file_path> <parameter> <action> <cutoff> [save_path]

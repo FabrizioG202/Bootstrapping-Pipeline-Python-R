@@ -5,7 +5,6 @@ import sys
 # - clus file to bed.
 import sys
 
-
 def replace_extension(path : str, new_extension : str) -> str:
     parts = path.split(".")
     parts[-1] = new_extension
@@ -14,7 +13,6 @@ def replace_extension(path : str, new_extension : str) -> str:
 import src.clus_files_io, src.cluster_description
 
 # usage script conversion_type
-#
 if __name__ == "__main__":
 
     match sys.argv:
