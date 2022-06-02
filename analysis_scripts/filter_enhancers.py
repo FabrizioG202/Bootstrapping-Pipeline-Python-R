@@ -29,13 +29,11 @@ def save_fantom_ids_as_bed_file(ids : list[str], save_path : str) -> None:
 
             f.write("{}\t{}\t{}\t{}\n".format(chromo, start, end, id))
 #%%
-
-
 if __name__ == "__main__":  
     argvs = sys.argv
     
     match argvs:
-        case [_, "fromBed", bed_file, feature_file, peak_type_file,]:
+        case [_, "fromBed", bed_file, feature_file, peak_type_file, *args]:
             ### Reading the peak type file.
             peak_type_ids, tss_ids = read_peak_type(peak_type_file)
             
@@ -58,21 +56,29 @@ if __name__ == "__main__":
             ### Get the enhancers which are not in the clusters:
             enhancers_not_in_clusters = all_enhancers_ids - enhancers_in_clusters_ids
 
-            ### Convert both to bed files:
-            in_clusters_save_path = bed_file.replace(".bed", "_enhancers_in_clusters.bed")
-            not_in_clusters_save_path = bed_file.replace(".bed", "_enhancers_not_in_clusters.bed")
-
-            save_fantom_ids_as_bed_file(enhancers_in_clusters_ids, in_clusters_save_path)
-            print(f"Saved {blue(in_clusters_save_path)}")
-            save_fantom_ids_as_bed_file(enhancers_not_in_clusters, not_in_clusters_save_path)
-            print(f"Saved {blue(not_in_clusters_save_path)}")
+            ### Convert both to bed files and Dealing with saving.
+            output_folder = args[0] if len(args) > 0 else None
+            if output_folder == None:
+                in_clusters_save_path = bed_file.replace(".bed", "_enhancers_inside.bed")
+                not_in_clusters_save_path = bed_file.replace(".bed", "_enhancers_outside.bed")
+                save_fantom_ids_as_bed_file(enhancers_in_clusters_ids, in_clusters_save_path)
+                print(f"Saved {blue(in_clusters_save_path)}")
+                save_fantom_ids_as_bed_file(enhancers_not_in_clusters, not_in_clusters_save_path)
+                print(f"Saved {blue(not_in_clusters_save_path)}")
+            else:
+                in_clusters_save_path = output_folder + "/" + "enhancers_inside.bed"
+                not_in_clusters_save_path = output_folder + "/" + "enhancers_outside.bed"
+                save_fantom_ids_as_bed_file(enhancers_in_clusters_ids, output_folder + "/" + in_clusters_save_path)
+                print(f"Saved {blue(in_clusters_save_path)}")
+                save_fantom_ids_as_bed_file(enhancers_not_in_clusters, output_folder + "/" + not_in_clusters_save_path)
+                print(f"Saved {blue(not_in_clusters_save_path)}")
 
         case [_, "info" | "i" | "--info" | "--i" | "--help" | "-h"]:
             print("Filter enhancers from a bed file.\n")
             print("Usage:")
-            print("\tpython filter_enhancers.py fromBed <bed_file> <feature_file> <peak_type_file>")
+            print("\tpython filter_enhancers.py fromBed <bed_file> <feature_file> <peak_type_file> [output_folder]")
             print("\n")
             print("Output:")
-            print("\t<bed_file>_enhancers_in_clusters.bed")
-            print("\t<bed_file>_enhancers_not_in_clusters.bed")
+            print("\t- A bed file with the enhancers inside the clusters.")
+            print("\t- A bed file with the enhancers outside the clusters.")
             print("\n")
