@@ -246,12 +246,14 @@ if __name__ == "__main__":
             save_path = args[0] if len(args) != 0 else replace_extension(file_path, "clus")
             table.write_clus_file(save_path)
 
+
         case [_, "--help" | "--h" | "-h" | "-help"]:
             print("""
             Usage: python ResultsTable.py [OPTIONS]
             Options:
                 applyFDR <file_path> <fdr_mode> [save_path]
                 filter <file_path> <parameter> <action> <cutoff> [save_path]
+                toClus <file_path> [save_path]
                 --help | -h | -help
             """)
             exit(0)
