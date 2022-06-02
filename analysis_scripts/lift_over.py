@@ -1,16 +1,7 @@
-
 import liftover
 import sys
 import os
-
-def green(text):
-    return '\033[92m' + str(text) + '\033[0m'
-
-def red(text):
-    return '\033[91m' + str(text) + '\033[0m'
-
-def yellow(text):
-    return '\033[93m' + str(text) + '\033[0m'
+from src.crayon import *
 
 def read_bed(path : str) -> list[tuple]:
     """
