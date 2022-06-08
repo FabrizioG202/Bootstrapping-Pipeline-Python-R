@@ -64,7 +64,7 @@ rule compute_pvalue:
         "../benchmarks/compute_pvalue.benchmark.txt"
     
     output:
-        directory("../results/")
+        files = [f"../results/{cell_line}.{feature_type}.tsv" for cell_line, feature_type, file_name in features]
     run:
         for cell_line, feature_type, file_name in features:
             print(f"Computing pvalues for {red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")

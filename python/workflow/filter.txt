@@ -12,5 +12,8 @@
 ? HMEC/CAGE ? include all features with the cell line HMEC and the type CAGE. Note that this has an higher priority than the rest so even if any feature belonging to the HMEC and CAGE is excluded, it will be included.
 
 #exclude:
-H1/CAGE
-H1/CTCF
+line: HMEC
+line: H1
+
+#include:
+HMEC/CAGE
