@@ -1,0 +1,2 @@
+python .\clus_io.py tsv2clus ..\qvalues\H1.CAGE.tsv ..\results\H1.CAGE.clus
+python .\clus_io.py clus2bed ..\data\clusters\H1\ ..\results\H1.CAGE.clus

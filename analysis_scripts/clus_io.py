@@ -11,6 +11,7 @@ def replace_extension(path : str, new_extension : str) -> str:
     return ".".join(parts)
 
 import src.clus_files_io, src.cluster_description
+from src.crayon import *
 
 # usage script conversion_type
 if __name__ == "__main__":
@@ -20,10 +21,12 @@ if __name__ == "__main__":
 
             # the output path, if not provided, just replace the the extension.
             out_path = (args[0]) if len(args) > 0 else replace_extension(source_path, "clus")
-            chromo_column = int(args[1]) if len(args) > 0 else 0
-            clus_column = int(args[2]) if len(args) > 1 else 2
+            chromo_column = int(args[1]) if len(args) > 1 else 0
+            clus_column = int(args[2]) if len(args) > 2 else 2
 
             src.clus_files_io.tsv_to_clus_file(source_path, out_path, chromo_column_idx=chromo_column, name_column_idx = clus_column)
+
+            print(green("Successfully converted tsv to clus file: " + out_path))
 
         case [_, "clus2bed", clusters_folder, source_path, *args]:
             print("Converting clus file to bed file.")
@@ -48,7 +51,7 @@ if __name__ == "__main__":
                 f.write(out)
             
             # Print that the file was created.
-            print("Done.")
+            print(green("Successfully converted clus file to bed file: " + out_path))
 
         case [_, "help"] | _:
             #Print the help:
