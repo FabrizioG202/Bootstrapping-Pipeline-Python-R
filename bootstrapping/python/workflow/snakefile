@@ -1,7 +1,7 @@
 # Adding the configuration file.
 configfile: "./workflow/config.yaml"
 
-# import module common from path: "../../common"
+# import module common from path: "../../../../common"
 import importlib.util
 import sys, os
 spec = importlib.util.spec_from_file_location("parsers", "../common/parsers.py")
@@ -30,7 +30,7 @@ import os
 
 # the specification of the provided features
 # Grabbing the features which are in a RDA format.
-specs = glob_wildcards("../data/features/{cell_line}/{feature_type}/{file_name}")
+specs = glob_wildcards("../../data/features/{cell_line}/{feature_type}/{file_name}")
 def italic(text):
     return("\033[3m{}\033[00m".format(text))
 
@@ -55,8 +55,8 @@ print()
 # Computing the pvalues.
 rule compute_pvalue:
     input:
-        counts = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
-        files = [f"../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
+        counts = [f"../../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features],
+        files = [f"../../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
     params:
         bootstraps = BOOTSTRAPS
     
@@ -64,22 +64,22 @@ rule compute_pvalue:
         "../benchmarks/compute_pvalue.benchmark.txt"
     
     output:
-        files = [f"../results/{cell_line}.{feature_type}.tsv" for cell_line, feature_type, file_name in features]
+        files = [f"../../results/{cell_line}.{feature_type}.tsv" for cell_line, feature_type, file_name in features]
     run:
         for cell_line, feature_type, file_name in features:
             print(f"Computing pvalues for {red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
            
             ### The file containing the counts. (--counts)
-            counts_file = f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
+            counts_file = f"../../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
 
             ### The file containing the features. (--features)
-            features_file = f"../data/features/{cell_line}/{feature_type}/{file_name}"
+            features_file = f"../../data/features/{cell_line}/{feature_type}/{file_name}"
 
             ### The folder containing the clusters. (--clusters)
-            clusters_file = f"../data/clusters/{cell_line}/"
+            clusters_file = f"../../data/clusters/{cell_line}/"
 
             ### The output tsv file (--output)
-            output_file = f"../results/{cell_line}.{feature_type}.tsv"
+            output_file = f"../../results/{cell_line}.{feature_type}.tsv"
             
             ### Running the file
             shell(f"python main.py -a {counts_file} -f {features_file} -o {output_file} -n {BOOTSTRAPS} -c {clusters_file}")
@@ -89,9 +89,9 @@ rule compute_pvalue:
 # Annotating the files.
 rule annotate_features:
     input: 
-        files = [f"../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
+        files = [f"../../data/features/{cell_line}/{feature_type}/{file_name}" for cell_line, feature_type, file_name in features]
     output:
-        files = [f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
+        files = [f"../../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv" for cell_line, feature_type, file_name in features]
     
     benchmark:
         "../benchmarks/annotate_features.benchmark.txt"
@@ -99,8 +99,8 @@ rule annotate_features:
     run:
         for cell_line, feature_type, file_name in features:
             print(f"Annotating {red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
-            in_file = f"../data/features/{cell_line}/{feature_type}/{file_name}"
-            out_file = f"../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
+            in_file = f"../../data/features/{cell_line}/{feature_type}/{file_name}"
+            out_file = f"../../data/counts/{cell_line}/{feature_type}/{file_name}.counts.tsv"
 
             # Checking if it exists already (this is done because snakemake deletes the file for no reason if nothing has changed)
             if(os.path.exists(out_file)):
@@ -108,4 +108,4 @@ rule annotate_features:
                 continue
 
             # Generating it.
-            shell(f"Rscript annotate.R -i {in_file} -o {out_file} -a ../data/annotations/")
+            shell(f"Rscript annotate.R -i {in_file} -o {out_file} -a ../../data/annotations/")
