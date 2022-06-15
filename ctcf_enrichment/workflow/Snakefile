@@ -1,0 +1,36 @@
+# Adding the configuration file.
+configfile: "./workflow/config.yaml"
+
+RESOLUTION = config["resolution"]
+CHROMOSOMES = ["chr" + str(i) for i in range(1, 23)]
+
+
+def format_resolution(resolution : int):
+    suffixes = ["", "k", "m", "g"]
+    for suffix in suffixes:
+        if resolution < 1000:
+            return str(int(resolution)) + suffix + "b"
+        resolution /= 1000
+
+
+def green(text : str):
+    return "\033[92m" + text + "\033[0m"
+rule compute_enrichment_maps:
+    input:
+        script = "./src/main.py",
+        feature_file = "./data/features.bed",
+        counts_file = "./data/shuffling/counts/CTCF.tsv",
+        genome_file = "./data/hg19.genome",
+  
+    
+    params:
+        resolution = RESOLUTION,
+        regions_path = "./data/shuffling/regions/"
+    benchmark:
+        "./benchmarks/enrichment.tsv"
+    run:
+        for chromo in CHROMOSOMES:
+            output_file = "./results/{}_{}.tsv".format(chromo, format_resolution(RESOLUTION))
+            print("Running enrichment for {}".format(green(chromo)))
+            # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
+            shell("python {input.script}" + f" {chromo} " + " {params.resolution} {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} 1000 " + f" {output_file}")
