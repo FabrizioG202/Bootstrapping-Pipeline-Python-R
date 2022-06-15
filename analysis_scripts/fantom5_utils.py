@@ -106,10 +106,32 @@ if __name__ == "__main__":
                     tss_count += 1
 
                 
-            print(f"Enhancers: {enhancer_count}, TSS: {tss_count}")
+            print(f"Enhancers: {blue(enhancer_count)}, TSS: {green(tss_count)}")
+
+        case [_, "background", "enhancer" | "tss" | "all" as peak_type, source_types_path, out_path]:
+            
+            file = open(source_types_path, "r")
+            out_file = open(out_path, "w")
+
+            with open(source_types_path, "r") as source_types_file, open(out_path, "w") as out_file:
+                for i, line in enumerate(source_types_file.readlines()):
+                    if line.startswith("#"):
+                        continue
+                    
+                    peak_name,  pt = line.split("\t")
+                    peak_name = peak_name.strip()
+                    pt = pt.strip()
+
+                    if peak_type != "all" and peak_type != pt:
+                        continue
+
+                    chromo, start, end = extract_ranges_from_name(peak_name)
+                    out_file.write(f"{chromo}\t{start}\t{end}\n")
+
 
         case [_, "--help"] | _:
             print("Usage:")
             print("\tpython3 fantom5_utils.py filter <source_bed_path> <fantom_5_path>")
             print("\tpython3 fantom5_utils.py getRanges <peak_type> <source_types_path> <out_path> [TSS radius]")
             print("\tpython3 fantom5_utils.py countTypes <source_types_path>")
+            print("\tpython3 fantom5_utils.py background <peak_type> <source_types_path> <out_path>")

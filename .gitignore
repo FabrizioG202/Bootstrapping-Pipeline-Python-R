@@ -1,13 +1,10 @@
-# Python temporary stuff.
-python/__pycache__
-python/.snakemake
-
-# R Temporary stuff
-R/.snakemake
-
 # Other temporary/useless stuff.
 .vscode/
 
 data/tmp/
 analysis/src/__pycache__
 analysis_scripts/src/__pycache__/
+
+# ignoring all .snakemake folder in the repo
+**/.snakemake
+**/__pycache__

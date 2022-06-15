@@ -29,17 +29,20 @@ def lift_bed_list(bed_list : list[tuple], lifter) -> list[tuple]:
         new_start = lifter[chrom][start]
         new_end = lifter[chrom][end]
         if len(new_start) == 0 or len(new_end) == 0:
-            #print(f"cannot lift {chrom}:{start}-{end}, does not lift anywhere")
             failed_entries += 1
             continue
         elif len(new_start) > 1 or len(new_end) > 1:
             if len(new_start) != len(new_end):
-                #print(f"cannot lift {chrom}:{start}-{end}, inconsistent number of lifting locations.")
                 continue
             else:
                 one_to_many += 1
+        
       
         for new_start_pos, new_end_pos in zip(new_start, new_end):
+            if new_start_pos > new_end_pos:
+                failed_entries += 1
+                continue
+
             lifted_list.append((chrom, new_start_pos[1], new_end_pos[1], *rest))
     
     return lifted_list, failed_entries, one_to_many
@@ -61,9 +64,13 @@ if __name__  == "__main__":
     match argv:
 
         case [_, file_path, from_assembly, to_assembly, *args]:
-            
+            replace = "-r" in args
             bed_data = read_bed(file_path)
-            out_path = args[0] if len(args) > 0 else os.path.splitext(file_path)[0] + '_' + to_assembly + '.bed'
+            
+            if replace:
+                out_path = file_path
+            else:
+                out_path = args[0] if len(args) > 0 else os.path.splitext(file_path)[0] + '_' + to_assembly + '.bed'
 
             # Lift over the data
             try:

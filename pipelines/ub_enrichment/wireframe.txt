@@ -1,0 +1,6 @@
+python .\clus_io.py tsv2clus ..\qvalues\HMEC.CAGE.tsv ..\tmp\HMEC.CAGE.clus
+python .\clus_io.py clus2bed ..\data\clusters\HMEC\ ..\tmp\HMEC.CAGE.clus 
+python .\bed_utils.py  intersect ..\data\features\HMEC\CAGE\features.bed ..\tmp\HMEC.CAGE.bed ..\tmp\inside.bed
+python .\fantom5_utils.py filter ..\tmp\inside.bed  ..\data\fantom5\peak_types.tsv
+python .\fantom5_utils.py getRanges enhancer ..\tmp\inside.fantom5.types ..\tmp\enhancer_inside.bed
+python .\fantom5_utils.py background enhancer ..\tmp\inside.fantom5.types ..\tmp\background.bed
