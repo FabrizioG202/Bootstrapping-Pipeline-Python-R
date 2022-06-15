@@ -64,7 +64,7 @@ rule compute_pvalue:
         "../benchmarks/compute_pvalue.benchmark.txt"
     
     output:
-        files = [f"../../results/{cell_line}.{feature_type}.tsv" for cell_line, feature_type, file_name in features]
+        files = [f"../../results/enrichment/{cell_line}.{feature_type}.tsv" for cell_line, feature_type, file_name in features]
     run:
         for cell_line, feature_type, file_name in features:
             print(f"Computing pvalues for {red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
@@ -79,7 +79,7 @@ rule compute_pvalue:
             clusters_file = f"../../data/clusters/{cell_line}/"
 
             ### The output tsv file (--output)
-            output_file = f"../../results/{cell_line}.{feature_type}.tsv"
+            output_file = f"../../results/enrichment/{cell_line}.{feature_type}.tsv"
             
             ### Running the file
             shell(f"python main.py -a {counts_file} -f {features_file} -o {output_file} -n {BOOTSTRAPS} -c {clusters_file}")

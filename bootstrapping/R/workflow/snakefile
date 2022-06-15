@@ -166,7 +166,7 @@ rule compute_pvalue:
         bootstraps = BOOTSTRAPS
     output:
         name =  [
-            (f"../../results/{cell_line}.{feature_type}.tsv")
+            (f"../../results/enrichment/{cell_line}.{feature_type}.tsv")
             for cell_line, feature_type, file_name, suffix in WRAP_TASKS
         ],
 
@@ -181,7 +181,7 @@ rule compute_pvalue:
 
             annotation_input_file = f"../../data/tmp/annotation_counts/{cell_line}/{feature_type}/counts.tsv"
 
-            out_file = f"../../results/{cell_line}.{feature_type}.tsv"
+            out_file = f"../../results/enrichment/{cell_line}.{feature_type}.tsv"
 
             print("- Cell Line ", yellow(cell_line), ", with ", green(feature_type), " features:", sep = "")
             shell("Rscript {input.script} --function_path {input.function_path} --genome {input.genome} --seed {params.seed} --bootstraps {params.bootstraps} --chromosomes chr22,chr21" + f" --annotations {annotation_input_file} --feature {feature_input_file} --clusters {cluster_input_folder}  --workers 3 --output {out_file}")

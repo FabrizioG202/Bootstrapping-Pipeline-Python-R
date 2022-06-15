@@ -1,0 +1,6 @@
+Building DAG of jobs...
+MissingInputException in line 1 of C:\Users\fguid\OneDrive\Desktop\Internship\Bootstrapping Pipeline 3\pipelines\ub_enrichment\Snakefile:
+Missing input files for rule tsv_to_clus:
+    output: /tmp/HMEC.CAGE.clus
+    affected files:
+        /qvalues/HMEC.CAGE.tsv

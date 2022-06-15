@@ -1,0 +1,22 @@
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job            count    min threads    max threads
+-----------  -------  -------------  -------------
+tsv_to_clus        1              1              1
+total              1              1              1
+
+Select jobs to execute...
+
+[Wed Jun 15 09:52:24 2022]
+rule tsv_to_clus:
+    input: ../../analysis_scripts/clus_io.py, ../../qvalues/HMEC.CAGE.tsv
+    output: /tmp/HMEC.CAGE.clus
+    jobid: 0
+    resources: tmpdir=C:\Users\fguid\AppData\Local\Temp
+
+[Wed Jun 15 09:52:26 2022]
+Finished job 0.
+1 of 1 steps (100%) done
+Complete log: .snakemake\log\2022-06-15T095223.929832.snakemake.log
