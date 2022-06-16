@@ -1,0 +1,11 @@
+qvalues: "../results/qvalues/HMEC.CAGE.tsv"
+clusters_folder: "../data/clusters/HMEC"
+
+
+tmp_folder: "../tmp"
+
+features : "../data/features/HMEC/CAGE/features.bed"
+
+fantom5_peak_types : "../data/fantom5/peak_types.tsv"
+
+tss_radius: 200

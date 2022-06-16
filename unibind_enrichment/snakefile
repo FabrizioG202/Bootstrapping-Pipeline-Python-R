@@ -1,0 +1,103 @@
+configfile: "./config.yaml"
+
+# Reading stuff formt he config file.
+qvalues = config['qvalues']
+tmp_folder = config['tmp_folder']
+clusters_folder = config['clusters_folder']
+features = config["features"]
+fantom5_peak_types = config["fantom5_peak_types"]
+tss_radius = config["tss_radius"]
+
+
+# Just tells to compute the enhancers, enhancers background, tss and tss background.
+rule all:
+    input:
+        enhancers = tmp_folder + "/" + "_enhancers_inside.bed",
+        background = tmp_folder + "/" + "enhancers_background.bed",
+        tss = tmp_folder + "/" + "_tss_inside.bed",
+        tss_background = tmp_folder + "/" + "tss_background.bed"
+
+rule clus_to_bed:
+    input:
+        script = "../analysis/clus_io.py",
+        clus = tmp_folder + "/" + "_qvalues.clus"
+    output: 
+        bed = temp(tmp_folder + "/" + "_qvalues.bed")
+    shell:
+        "python {input.script} clus2bed" f" {clusters_folder}" " {input.clus} {output.bed}"
+
+
+#This rule transform whatever is the q values into a clus file.
+rule tsv_to_clus:
+    input:
+        script = "../analysis/clus_io.py",
+        qvalues = qvalues
+    output: 
+        clus = temp(tmp_folder + "/" + "_qvalues.clus")
+    shell:
+        "python {input.script} tsv2clus {input.qvalues} {output.clus}"
+
+
+#This rule intersects the clusters ranges with the features (features active in the given cell line).
+rule intersect_clusters:
+    input:
+        script = "../analysis/bed_utils.py",
+        bed = tmp_folder + "/" + "_qvalues.bed",
+        features = features
+    output:
+        inside = temp(tmp_folder + "/" + "_inside.bed"),
+
+    shell:
+        "python {input.script} intersect" " {input.features} {input.bed} {output.inside}"
+
+# This rule filters the features to the ones which have a correspondent entry in the FANTOM5 data
+rule filter:
+    input: 
+        script = "../analysis/fantom5_utils.py",
+        inside = tmp_folder + "/" + "_inside.bed",
+        peak_types = fantom5_peak_types
+    output:
+        filtered = temp(tmp_folder + "/" + "_inside.types")
+    shell:
+        "python {input.script} filter" " {input.inside} {input.peak_types} {output.filtered}"
+
+# This rule creates the background.
+rule get_enhancers:
+    input:
+        script = "../analysis/fantom5_utils.py",
+        filtered = tmp_folder + "/" + "_inside.types"
+    output:
+        enhancers = tmp_folder + "/" + "_enhancers_inside.bed"
+    shell:
+        "python {input.script} getRanges enhancer " " {input.filtered} {output.enhancers}"
+
+rule get_enhancers_background:
+    input:
+        script = "../analysis/fantom5_utils.py",
+        filtered = tmp_folder + "/" + "_inside.types"
+    output:
+        background = tmp_folder + "/" + "enhancers_background.bed"
+    shell:
+        "python {input.script} background enhancer " " {input.filtered} {output.background}"
+
+
+rule get_tss:
+    input:
+        script = "../analysis/fantom5_utils.py",
+        filtered = tmp_folder + "/" + "_inside.types"
+    output:
+        tss = tmp_folder + "/" + "_tss_inside.bed"
+    shell:
+        "python {input.script} getRanges tss " " {input.filtered} {output.tss} "  f"{tss_radius}"
+
+
+rule get_tss_background:
+    input:
+        script = "../analysis/fantom5_utils.py",
+        filtered = tmp_folder + "/" + "_inside.types"
+    output:
+        background = tmp_folder + "/" + "tss_background.bed"
+    shell:
+        "python {input.script} background tss " " {input.filtered} {output.background} "
+
+

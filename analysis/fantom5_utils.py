@@ -26,11 +26,11 @@ if __name__ == "__main__":
 
     match argv:
         
-        case [_, "filter", source_bed_path, fantom_5_path]:
+        case [_, "filter", source_bed_path, fantom_5_path, *args]:
             # read the peak type as a dict.
             peak_types = parse_fantom_peak_type_data(fantom_5_path)
             
-            out_file_path = replace_extension(source_bed_path, "fantom5.types")
+            out_file_path = args[0] if len(args) > 0 else replace_extension(source_bed_path, "fantom5.types")
             
             with open(source_bed_path, "r") as source_bed_file, open(out_file_path, "w") as out_file:
                 
@@ -42,7 +42,11 @@ if __name__ == "__main__":
                         continue
                 
                     # split the line and get the peak name.
-                    peak_name = line.split("\t")[3].strip()
+                    try:
+                        peak_name = line.split("\t")[3].strip()
+                    except IndexError:
+                        print("Error: line {} is not in the expected format.".format(i))
+                        print(source_bed_path)
                     peak_type = peak_types.get(peak_name, None)
                     if peak_type is None:
                         print(peak_name)

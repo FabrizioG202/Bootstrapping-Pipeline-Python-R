@@ -32,8 +32,15 @@ if __name__ == "__main__":
         case [_, "collapse" | "merge", source_path, *args]:
             import pyranges as pr
             data = pr.read_bed(source_path)
+            data_length_before = len(data)
+
             data = data.merge()
-            
+
+            data_length_after = len(data)
+
+            # Print diagnostics
+            retained_percentage = data_length_after / data_length_before * 100
+            print(f"Reduced number of features from {yellow(data_length_before)} to {green(data_length_after)} ({italic(int(retained_percentage))}%)")
             # Overwrite the source file.
             data.to_bed(source_path)
 

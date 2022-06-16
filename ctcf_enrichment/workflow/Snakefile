@@ -7,6 +7,10 @@ RESOLUTION = config["resolution"]
 CHROMOSOMES = ["chr" + str(i) for i in range(1, 23)]
 BOOTSTRAPS = config["bootstraps"]
 
+# IF the resolution is not a list make it into a list of just 1 element:
+if not isinstance(RESOLUTION,list):
+    RESOLUTION = [RESOLUTION]
+
 
 def format_resolution(resolution : int):
     suffixes = ["", "k", "m", "g"]
@@ -35,8 +39,11 @@ rule compute_enrichment_maps:
         # make the directory ../results/ctcf_enrichment if it does not already exist.
         if not os.path.exists("../results/ctcf_enrichment"):
             os.makedirs("../results/ctcf_enrichment")
+            
         for chromo in CHROMOSOMES:
-            output_file = "../results/ctcf_enrichment/{}_{}".format(chromo, format_resolution(RESOLUTION))
-            print("Running enrichment for {}".format(green(chromo)))
-            # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
-            shell("python {input.script}" + f" {chromo} " + " {params.resolution} {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")
+            for resolution in RESOLUTION:
+                resolution_str = format_resolution(resolution)
+                output_file = "../results/ctcf_enrichment/{}_{}".format(chromo, yellow(resolution_str))
+                print("Running enrichment for {}".format(green(chromo)))
+                # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
+                shell("python {input.script}" + f" {chromo} " + resolution_str + " {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")
