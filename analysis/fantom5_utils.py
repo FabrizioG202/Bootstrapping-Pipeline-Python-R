@@ -20,6 +20,25 @@ def extract_ranges_from_name(name :str) -> tuple[str, int, int]:
     
     return chromo, int(start), int(end)
 
+def count_peak_types(path : str) -> tuple[int, int]:
+    """
+    Count the number of peaks in a peak file.
+    """
+    tss_ = 0
+    enhancer_ = 0
+    with open(path, "r") as f:
+        for line in f.readlines():
+            if line.startswith("#"):
+                continue
+            else:
+                type_ = line.split("\t")[1].strip()
+                if type_ == "tss":
+                    tss_ += 1
+                elif type_ == "enhancer":
+                    enhancer_ += 1
+                else:
+                    raise ValueError("Unknown peak type: {}".format(type_))
+    return tss_, enhancer_
 
 if __name__ == "__main__":
     argv = sys.argv
@@ -166,6 +185,15 @@ if __name__ == "__main__":
 
                     out_file.write(f"{chromo}\t{start}\t{end}\n")
 
+        case [_, "typesTable", foreground_types_path, background_types_path, out_path]:
+            foreground_types = count_peak_types(foreground_types_path)
+            background_types = count_peak_types(background_types_path)
+
+            with open(out_path, "w") as out_file:
+                # Add the header
+                out_file.write("\t".join(["type", "foreground", "background"]) + "\n")
+                out_file.write("\t".join(["enhancer", str((foreground_types[1])), str((background_types[1]))]) + "\n")
+                out_file.write("\t".join(["tss", str((foreground_types[0])), str((background_types[0]))]) + "\n")
 
         case [_, "--help"] | _:
             print("Usage:")

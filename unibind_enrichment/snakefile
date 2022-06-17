@@ -13,6 +13,18 @@ tss_name = f"tss_{tss_radius}bp"
 def red(text):
     return "\033[1;31m" + text + "\033[0m"
 
+rule all:
+    input:
+        #All the outputs form lift_and_filter.
+        files = [
+            tmp_folder + "/" + f"{tss_name}.bed",
+            tmp_folder + "/" + f"{tss_name}_background.bed",
+            tmp_folder + "/" + "enhancers.bed",
+            tmp_folder + "/" + "enhancers_background.bed"
+            ],
+        # The table
+        peak_table = tmp_folder + "/" + "types_counts.tsv",
+
 rule clus_to_bed:
     input:
         script = "../analysis/clus_io.py",
@@ -108,7 +120,7 @@ rule get_tss_background:
     shell:
         "python {input.script} background tss " " {input.background_filtered} {output.background} " f"{tss_radius}"
 
-rule all:
+rule lift_and_filter:
     input:
         # All the files.
         files = [
@@ -137,3 +149,14 @@ rule all:
 
             # lift over
             shell("python {input.lift_over_script} " f" {f} hg19 hg38 {o}")
+
+rule create_types_table:
+    input:
+        script = "../analysis/fantom5_utils.py",
+        foreground_types = tmp_folder + "/" + "_inside.types",
+        background_types = tmp_folder + "/" + "_background.types",
+    output:
+        peak_table = tmp_folder + "/" + "types_counts.tsv"
+    
+    shell:
+        "python {input.script} typesTable " " {input.foreground_types} {input.background_types} {output.peak_table}"
