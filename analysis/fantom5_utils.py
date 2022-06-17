@@ -1,6 +1,6 @@
 from src.crayon import *
 import sys
-from src.fantom5_io import parse_fantom_peak_type_data
+from src.fantom5_io import parse_fantom_peak_type_data, parse_fantom_data
 
 def replace_extension(path : str, new_extension : str) -> str:
     parts = path.split(".")
@@ -131,25 +131,61 @@ if __name__ == "__main__":
                 
             print(f"Enhancers: {blue(enhancer_count)}, TSS: {green(tss_count)}")
 
-        case [_, "getEntrez", source_types_path, *args]:
-            file = open(source_types_path, "r")
-            enhancer_count = 0
-            tss_count = 0
-            for line in file.readlines():
+        case [_, "getEntrez", source_types_path, peak_to_entrez_path, out_path]:
+            
+            # Read the peak file
+            peak_file = open(source_types_path, "r")
+            
+            # the resulting ids
+            ids = []
+
+            # Reading the peaks to entrez ids
+            peaks_to_entrez = parse_fantom_data(peak_to_entrez_path)
+
+            # diagnostics
+            mapped = 0
+            unmapped = 0
+            nas = 0
+            
+            # loop over the lines of the file (they are in a type-like format (CAGE.ID, peak_type)))
+            for line in peak_file.readlines():
+                # skip headers
                 if line.startswith("#"):
                     continue
-                
+                    
+                # split the line and get the peak name.
                 peak_name, pt = line.split("\t")
                 peak_name = peak_name.strip()
-                pt = pt.strip()
 
-                if pt == "enhancer":
-                    enhancer_count += 1
-                elif pt == "tss":
-                    tss_count += 1
+                # get the entrez id for the peak name
+                entrez_id = peaks_to_entrez.get(peak_name, None)
+                if entrez_id is None:
+                    unmapped += 1
+                    continue
 
-                
-            print(f"Enhancers: {blue(enhancer_count)}, TSS: {green(tss_count)}")
+                elif entrez_id == "NA":
+                    nas += 1
+                    continue
+
+                # add the entrez id to the list
+                ids.append(entrez_id)
+                mapped += 1
+
+            # Remove the duplicates
+            ids = list(set(ids))
+
+
+            # write the ids to a file
+            with open(out_path, "w") as out_file:
+                for id in ids:
+                    out_file.write(f"{id}\n")
+
+
+            # Print some diagnostics
+            print(f"Mapping Finished: Mapped: {green(mapped)}, Unmapped: {red(unmapped)}, NA: {yellow(nas)}")
+
+            # print that the file was written
+            print(green(f"Successfully wrote the entrez ids to: " +  out_path))
 
         case [_, "background", "enhancer" | "tss" | "all" as peak_type, source_types_path, out_path, *args]:
             

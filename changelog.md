@@ -1,3 +1,7 @@
+# 17.6.2022 .3
+- Added the Gene Set Enrichment Analysis (GSEA) pipeline.
+- Changed the folder in which the results are computed.
+
 # 17.6.2022 .2
 - Added the peak type table as an output of the unibind enrichment pipeline.
 

@@ -1,0 +1,112 @@
+configfile: "./config.yaml"
+
+# Reading stuff formt he config file.
+qvalues = config['qvalues']
+tmp_folder = config['tmp_folder']
+clusters_folder = config['clusters_folder']
+features = config["features"]
+fantom5_peak_types = config["fantom5_peak_types"]
+fantom5_peak_to_entrez = config["fantom5_peak_to_entrez"]
+fantom5_ontology_path = config["fantom5_ontology_path"]
+tss_radius = config["tss_radius"]
+
+tss_name = f"tss_{tss_radius}bp"
+
+def red(text):
+    return "\033[1;31m" + text + "\033[0m"
+
+rule all:
+    input:
+        gsea_output = tmp_folder + "/" + "enrichment.tsv"
+
+#Actually run the GSEA
+rule run_gsea:
+    input:
+        script = "../analysis/gsea.py",
+        foreground_entrez_ids = tmp_folder + "/" + "_foreground_entrez_ids.txt",
+        background_entrez_ids = tmp_folder + "/" + "_background_entrez_ids.txt"
+    output:
+        gsea_output = tmp_folder + "/" + "enrichment.tsv"
+    shell:
+        "python {input.script} {input.foreground_entrez_ids} {input.background_entrez_ids} {fantom5_ontology_path} {output.gsea_output}" 
+
+rule get_foreground_entrez_ids:
+    input:
+        # the script
+        script = "../analysis/fantom5_utils.py",
+        
+        foreground_filtered = tmp_folder + "/" + "_inside.types",
+        
+    output:
+        foreground_entrez_ids = temp(tmp_folder + "/" + "_foreground_entrez_ids.txt")
+
+    shell:
+        "python {input.script} getEntrez {input.foreground_filtered} " + fantom5_peak_to_entrez +  " {output.foreground_entrez_ids}"
+
+rule get_background_entrez_ids: 
+    input:
+        # the script
+        script = "../analysis/fantom5_utils.py",
+
+        background_filtered = tmp_folder + "/" + "_background.types",
+
+    output:
+        background_entrez_ids = temp(tmp_folder + "/" + "_background_entrez_ids.txt")
+
+    shell:
+        "python {input.script} getEntrez {input.background_filtered} " + fantom5_peak_to_entrez +  " {output.background_entrez_ids}"
+
+rule clus_to_bed:
+    input:
+        script = "../analysis/clus_io.py",
+        clus = tmp_folder + "/" + "_qvalues.clus"
+    output: 
+        bed = temp(tmp_folder + "/" + "_qvalues.bed")
+    shell:
+        "python {input.script} clus2bed" f" {clusters_folder}" " {input.clus} {output.bed}"
+
+
+#This rule transform whatever is the q values into a clus file.
+rule tsv_to_clus:
+    input:
+        script = "../analysis/clus_io.py",
+        qvalues = qvalues
+    output: 
+        clus = temp(tmp_folder + "/" + "_qvalues.clus")
+    shell:
+        "python {input.script} tsv2clus {input.qvalues} {output.clus}"
+
+
+#This rule intersects the clusters ranges with the features (features active in the given cell line).
+rule intersect_clusters:
+    input:
+        script = "../analysis/bed_utils.py",
+        bed = tmp_folder + "/" + "_qvalues.bed",
+        features = features
+    output:
+        inside = temp(tmp_folder + "/" + "_inside.bed"),
+
+    shell:
+        "python {input.script} intersect" " {input.features} {input.bed} {output.inside}"
+
+# This rule filters the features to the ones which have a correspondent entry in the FANTOM5 data
+rule get_foreground_types:
+    input: 
+        script = "../analysis/fantom5_utils.py",
+        inside = tmp_folder + "/" + "_inside.bed",
+        peak_types = fantom5_peak_types
+    output:
+        filtered = temp(tmp_folder + "/" + "_inside.types")
+    shell:
+        "python {input.script} filter" " {input.inside} {input.peak_types} {output.filtered}"
+
+# This rule filters the background features to the ones which have a correspondent entry in the FANTOM5 data
+rule get_background_types:
+    input: 
+        script = "../analysis/fantom5_utils.py",
+        features = features,
+        peak_types = fantom5_peak_types
+    output:
+        background_filtered = temp(tmp_folder + "/" + "_background.types")
+    shell:
+        "python {input.script} filter" " {input.features} {input.peak_types} {output.background_filtered}"

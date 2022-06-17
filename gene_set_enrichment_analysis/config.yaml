@@ -2,10 +2,12 @@ qvalues: "../results/qvalues/HMEC.CAGE.tsv"
 clusters_folder: "../data/clusters/HMEC"
 
 
-tmp_folder: "../results/unibind_enrichment/"
+tmp_folder: "../results/GSEA/"
 
 features : "../data/features/HMEC/CAGE/features.bed"
 
 fantom5_peak_types : "../data/fantom5/peak_types.tsv"
+fantom5_peak_to_entrez : "../data/fantom5/peak_to_entrez.tsv"
+fantom5_ontology_path : "../data/fantom5/ontology.gmt"
 
 tss_radius: 200
