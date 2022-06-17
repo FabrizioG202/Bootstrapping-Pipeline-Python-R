@@ -90,5 +90,5 @@ if __name__  == "__main__":
 
         case [_, "help"| "h"| "--help"] | _:
             print(
-                "Usage: python lift_over.py <bed_file> <from_assembly> <to_assembly>\n"
+                "Usage: python lift_over.py <bed_file> <from_assembly> <to_assembly> [out_path]\n"
             )

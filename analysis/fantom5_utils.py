@@ -112,10 +112,38 @@ if __name__ == "__main__":
                 
             print(f"Enhancers: {blue(enhancer_count)}, TSS: {green(tss_count)}")
 
-        case [_, "background", "enhancer" | "tss" | "all" as peak_type, source_types_path, out_path]:
+        case [_, "getEntrez", source_types_path, *args]:
+            file = open(source_types_path, "r")
+            enhancer_count = 0
+            tss_count = 0
+            for line in file.readlines():
+                if line.startswith("#"):
+                    continue
+                
+                peak_name, pt = line.split("\t")
+                peak_name = peak_name.strip()
+                pt = pt.strip()
+
+                if pt == "enhancer":
+                    enhancer_count += 1
+                elif pt == "tss":
+                    tss_count += 1
+
+                
+            print(f"Enhancers: {blue(enhancer_count)}, TSS: {green(tss_count)}")
+
+        case [_, "background", "enhancer" | "tss" | "all" as peak_type, source_types_path, out_path, *args]:
             
             file = open(source_types_path, "r")
             out_file = open(out_path, "w")
+
+            if peak_type == "tss":
+                if len(args) == 0:
+                    print(red("Please provide a radius for the TSS extraction!"))
+                    exit(1)
+                else:
+                    tss_radius = int(args[0])
+            
 
             with open(source_types_path, "r") as source_types_file, open(out_path, "w") as out_file:
                 for i, line in enumerate(source_types_file.readlines()):
@@ -128,8 +156,14 @@ if __name__ == "__main__":
 
                     if peak_type != "all" and peak_type != pt:
                         continue
+                    
 
                     chromo, start, end = extract_ranges_from_name(peak_name)
+
+                    if peak_type == "tss":
+                        start = start - tss_radius
+                        end = end + tss_radius
+
                     out_file.write(f"{chromo}\t{start}\t{end}\n")
 
 
@@ -138,4 +172,4 @@ if __name__ == "__main__":
             print("\tpython3 fantom5_utils.py filter <source_bed_path> <fantom_5_path>")
             print("\tpython3 fantom5_utils.py getRanges <peak_type> <source_types_path> <out_path> [TSS radius]")
             print("\tpython3 fantom5_utils.py countTypes <source_types_path>")
-            print("\tpython3 fantom5_utils.py background <peak_type> <source_types_path> <out_path>")
+            print("\tpython3 fantom5_utils.py background <peak_type> <source_types_path> <out_path> [TSS radius]")
