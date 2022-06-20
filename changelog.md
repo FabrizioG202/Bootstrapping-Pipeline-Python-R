@@ -1,3 +1,5 @@
+# 20.6.2022 .3
+- Fixed the fine enrichment pipeline to work with multiple features in one go.
 # 20.6.2022 .2
 - Added all the features cited in https://www.nature.com/articles/s41467-019-13423-8 for GM12878.
 # 20.6.2022 .1

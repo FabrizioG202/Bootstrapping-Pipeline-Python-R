@@ -1,4 +1,6 @@
 import os
+import glob
+from pprint import pprint
 
 # Adding the configuration file.
 configfile: "./workflow/config.yaml"
@@ -26,25 +28,27 @@ FEATURE_TYPE = config["feature_type"]
 if not isinstance(RESOLUTION,list):
     RESOLUTION = [RESOLUTION]
 
-# The first file in the folder ../data/features/cell_line/feature_type/
-try:
-    feature_file = os.path.join(
-        "../data/features/",
-        CELL_LINE,
-        FEATURE_TYPE,
-        os.listdir("../data/features/" + CELL_LINE + "/" + FEATURE_TYPE)[0]
-    )
-except:
-    print("No feature file found for cell line: " + CELL_LINE + " and feature type: " + FEATURE_TYPE)
-    exit()
+#a list of tuple: (feature_type, filepath)
+feature = []
 
-# the counts file is the first file in the folder ../data/counts/cell_line/feature_type/
-counts_file = os.path.join(
-    "../data/counts/",
-    CELL_LINE,
-    FEATURE_TYPE,
-    os.listdir("../data/counts/" + CELL_LINE + "/" + FEATURE_TYPE)[0]
-)
+def get_first_file_in_dir(dirpath):
+    for file in os.listdir(dirpath):
+        if file.endswith(".bed"):
+            return os.path.join(dirpath, file)
+
+    raise Exception("No bed file found in directory: " + dirpath)
+
+# if the FEATURE type is a single string add it to a list
+if isinstance(FEATURE_TYPE, str):
+    if FEATURE_TYPE == "all":
+        # get all the subfolder 
+        # the features folder is expected in this format:
+        # features/cell_line/feature_type/file.bed
+        features = [(os.path.basename(x), get_first_file_in_dir(x)) for x in glob.glob("../data/features/" + CELL_LINE + "/*")]
+    else:
+        features = [(FEATURE_TYPE, get_first_file_in_dir("../data/features/" + CELL_LINE + "/" + FEATURE_TYPE))]
+else:
+    features = [(x, get_first_file_in_dir("../data/features/" + CELL_LINE + "/" + x)) for x in FEATURE_TYPE]
 
 
 def format_resolution(resolution : int):
@@ -57,11 +61,47 @@ def format_resolution(resolution : int):
 
 def green(text : str):
     return "\033[92m" + text + "\033[0m"
+
+
+def get_counts_filename_from_features(features : list):
+    return [os.path.join(os.path.dirname(x[1]), os.path.basename(x[1])[:-4] + ".counts.tsv") for x in features]
+
+def yellow(text : str):
+    return "\033[93m" + text + "\033[0m"
+
+def red(text : str):
+    return "\033[91m" + text + "\033[0m"
+
+def italic(text : str):
+    return "\033[3m" + text + "\033[0m"
+
+counts_files = get_counts_filename_from_features(features)
+
+#Print each feature in format yellow(feature_type) + ": " + italic(feature_file)
+print("Annotating and computing values for the following features:")
+for feature_type, feature_file in features:
+    print(yellow(feature_type) + ": " + italic(feature_file))
+
+
+
+rule annotate_features:
+    input: 
+        script = "src/annotate.R",
+        feature_files = [x[1] for x in features],
+    output:
+        counts_files = counts_files,
+    
+    run:
+        for i in range(len(input.feature_files)):
+            input_file = input.feature_files[i]
+            output_file = output.counts_files[i]
+            shell("Rscript {input.script}" f" -i {input_file} -o {output_file} -a ../data/annotations/")
+        
 rule compute_enrichment_maps:
     input:
         script = "./src/main.py",
-        feature_file = feature_file,
-        counts_file = counts_file,
+        feature_file = [x[1] for x in features],
+        counts_file = counts_files,
         genome_file = "../data/hg19.genome",
     
     params:
@@ -75,10 +115,18 @@ rule compute_enrichment_maps:
         if not os.path.exists("../results/fine_enrichment"):
             os.makedirs("../results/fine_enrichment")
             
-        for chromo in CHROMOSOMES:
-            for resolution in RESOLUTION:
-                resolution_str = format_resolution(resolution)
-                output_file = "../results/fine_enrichment/{}_{}".format(chromo, yellow(resolution_str))
-                print("Running enrichment for {}".format(green(chromo)))
-                # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
-                shell("python {input.script}" + f" {chromo} " + resolution_str + " {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")
+        for i in range(len(input.feature_file)):
+            input_file = input.feature_file[i]
+            feature_type = features[i][0]
+            base_folder = "../results/fine_enrichment/" + CELL_LINE + "/" + feature_type + "/" 
+            for chromo in CHROMOSOMES:
+                for resolution in RESOLUTION:
+                    resolution_str = format_resolution(resolution)
+                    output_file = base_folder + "/" + resolution_str + "/" + chromo
+
+                    # create the parent folder if it does not exist
+                    if not os.path.exists(os.path.dirname(output_file)):
+                        os.makedirs(os.path.dirname(output_file))
+
+                    # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
+                    shell("python {input.script}" + f" {chromo} " + resolution_str + " {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")
