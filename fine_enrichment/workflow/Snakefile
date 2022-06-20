@@ -1,0 +1,84 @@
+import os
+
+# Adding the configuration file.
+configfile: "./workflow/config.yaml"
+
+
+# General useful functions, color, italic etc,
+def red(text):
+    return "\033[1;31m" + str(text) + "\033[0m"
+
+def green(text):
+    return "\033[1;32m" + str(text) + "\033[0m"
+
+def yellow(text):
+    return "\033[1;33m" + str(text) + "\033[0m"
+
+
+RESOLUTION = config["resolution"]
+CHROMOSOMES = ["chr" + str(i) for i in range(1, 23)]
+BOOTSTRAPS = config["bootstraps"]
+
+CELL_LINE = config["cell_line"]
+FEATURE_TYPE = config["feature_type"]
+
+# IF the resolution is not a list make it into a list of just 1 element:
+if not isinstance(RESOLUTION,list):
+    RESOLUTION = [RESOLUTION]
+
+# The first file in the folder ../data/features/cell_line/feature_type/
+try:
+    feature_file = os.path.join(
+        "../data/features/",
+        CELL_LINE,
+        FEATURE_TYPE,
+        os.listdir("../data/features/" + CELL_LINE + "/" + FEATURE_TYPE)[0]
+    )
+except:
+    print("No feature file found for cell line: " + CELL_LINE + " and feature type: " + FEATURE_TYPE)
+    exit()
+
+# the counts file is the first file in the folder ../data/counts/cell_line/feature_type/
+counts_file = os.path.join(
+    "../data/counts/",
+    CELL_LINE,
+    FEATURE_TYPE,
+    os.listdir("../data/counts/" + CELL_LINE + "/" + FEATURE_TYPE)[0]
+)
+
+
+def format_resolution(resolution : int):
+    suffixes = ["", "k", "m", "g"]
+    for suffix in suffixes:
+        if resolution < 1000:
+            return str(int(resolution)) + suffix + "b"
+        resolution /= 1000
+
+
+def green(text : str):
+    return "\033[92m" + text + "\033[0m"
+rule compute_enrichment_maps:
+    input:
+        script = "./src/main.py",
+        feature_file = feature_file,
+        counts_file = counts_file,
+        genome_file = "../data/hg19.genome",
+    
+    params:
+        resolution = RESOLUTION,
+        regions_path = "../data/annotations/",
+        bootstraps = BOOTSTRAPS
+    benchmark:
+        "../benchmarks/enrichment.tsv"
+    run:
+        # make the directory if it does not already exist.
+        if not os.path.exists("../results/fine_enrichment"):
+            os.makedirs("../results/fine_enrichment")
+            
+        for chromo in CHROMOSOMES:
+            for resolution in RESOLUTION:
+                resolution_str = format_resolution(resolution)
+                output_file = "../results/fine_enrichment/{}_{}".format(chromo, yellow(resolution_str))
+                print("Running enrichment for {}".format(green(chromo)))
+                # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
+                shell("python {input.script}" + f" {chromo} " + resolution_str + " {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")

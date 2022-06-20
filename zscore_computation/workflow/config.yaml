@@ -1,0 +1,7 @@
+resolutions:
+  - "50kb"
+  - "100kb"
+
+# The parent folder up to the cell line folder (this should contain all the folders: 100kb, 50kb, etc...)
+parent_folder: # The path to the parent folder...
+output_folder: "../results/zscore/"

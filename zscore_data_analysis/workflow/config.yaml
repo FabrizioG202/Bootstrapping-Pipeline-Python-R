@@ -1,0 +1,9 @@
+fine_enrichment_path: "../results/fine_enrichment/100kb/"
+zscores_path: "../results/zscores/100kb/"
+hubs_path: ../results/hubs/HMEC.CAGE.bed
+output_path: "../results/hubs_data/100kb/"
+resolution: 100kb
+
+# Set only autosomal if you have data only for autosomal chromosomes, otherwise set it to False to have data for other chromosomes too.
+# If it is set to False and there is no data for other chromosomes, the script will fail.
+only_autosomal: true

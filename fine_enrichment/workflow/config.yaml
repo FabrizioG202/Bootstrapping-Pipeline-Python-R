@@ -1,0 +1,6 @@
+resolution: 100000
+bootstraps: 100
+
+# Cell line and Feature name are used to look for the feature file in the counts and feature folder, so make sure they match.
+cell_line: "HMEC"
+feature_type: "CAGE"

@@ -1,3 +1,8 @@
+# 20.6.2022 .1
+- Renamed gene_set_enrichment_analysis to gsea to match the output directory.
+- Modified CTCF enrichment to Fine Enrichment to be more global and modified it to accept other inputs.
+- Fixed the ZScore Computation file
+- Fixed the ZScore data Analsyis pipeline (now it can split the data between inside and outside transcription hubs)
 # 17.6.2022 .3
 - Added the Gene Set Enrichment Analysis (GSEA) pipeline.
 - Changed the folder in which the results are computed.

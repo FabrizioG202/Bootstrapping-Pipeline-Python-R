@@ -1,0 +1,20 @@
+configfile: "./workflow/config.yaml"
+
+# Read the data from the config file
+fine_enrichment_path = config['fine_enrichment_path']
+zscores_path = config['zscores_path']
+hubs_path = config['hubs_path']
+output_path = config['output_path']
+
+resolution = config['resolution']
+only_autosomal = config['only_autosomal']
+
+rule all:
+    input:
+        script_file = "src/main.py"
+    params: 
+        resolution = resolution,
+        only_autosomal = only_autosomal
+
+    shell:
+        "python {input.script_file}" f" {fine_enrichment_path} {zscores_path} {hubs_path} {output_path}" " {params.resolution} {params.only_autosomal}"
