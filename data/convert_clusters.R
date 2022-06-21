@@ -3,8 +3,8 @@
 install.packages("rjson")
 library(rjson)
 
-directory <- "./rda_clusters/H1/"
-directory_out <- "./clusters/H1/"
+directory <- "./data/rda_clusters/GM12878/"
+directory_out <- "./data/clusters/GM12878/"
 
 for (i in 1:22) {
     path <- paste0(directory, "chr", i, "_spec_res.Rda")
