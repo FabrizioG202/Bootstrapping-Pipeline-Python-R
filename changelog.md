@@ -1,3 +1,7 @@
+# 21.6.2022 .2
+- Fixed the fine enrichment pipeline.
+# 21.6.2022 .1
+- Added the cluster data for GM12878.
 # 20.6.2022 .3
 - Fixed the fine enrichment pipeline to work with multiple features in one go.
 # 20.6.2022 .2

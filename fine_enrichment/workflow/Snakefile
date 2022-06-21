@@ -83,20 +83,6 @@ for feature_type, feature_file in features:
     print(yellow(feature_type) + ": " + italic(feature_file))
 
 
-
-rule annotate_features:
-    input: 
-        script = "src/annotate.R",
-        feature_files = [x[1] for x in features],
-    output:
-        counts_files = counts_files,
-    
-    run:
-        for i in range(len(input.feature_files)):
-            input_file = input.feature_files[i]
-            output_file = output.counts_files[i]
-            shell("Rscript {input.script}" f" -i {input_file} -o {output_file} -a ../data/annotations/")
-        
 rule compute_enrichment_maps:
     input:
         script = "./src/main.py",
@@ -110,6 +96,9 @@ rule compute_enrichment_maps:
         bootstraps = BOOTSTRAPS
     benchmark:
         "../benchmarks/enrichment.tsv"
+        
+    output: 
+        "txt"
     run:
         # make the directory if it does not already exist.
         if not os.path.exists("../results/fine_enrichment"):
@@ -119,6 +108,7 @@ rule compute_enrichment_maps:
             input_file = input.feature_file[i]
             feature_type = features[i][0]
             base_folder = "../results/fine_enrichment/" + CELL_LINE + "/" + feature_type + "/" 
+            counts_file = input.counts_file[i]
             for chromo in CHROMOSOMES:
                 for resolution in RESOLUTION:
                     resolution_str = format_resolution(resolution)
@@ -129,4 +119,18 @@ rule compute_enrichment_maps:
                         os.makedirs(os.path.dirname(output_file))
 
                     # (usage: "Usage: python main.py <chromo> <resolution> <features_path> <counts_path> <genome_path> <regions_path> <N> <out_path>")
-                    shell("python {input.script}" + f" {chromo} " + resolution_str + " {input.feature_file} {input.counts_file} {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")
+                    cmd = ("python {input.script}" + f" {chromo} " + resolution_str + f" {input_file} {counts_file}" " {input.genome_file} {params.regions_path} {params.bootstraps}" + f" {output_file}")
+                    shell(cmd)
+
+rule annotate_features:
+    input: 
+        script = "src/annotate.R",
+        feature_files = [x[1] for x in features],
+    output:
+        counts_files = counts_files,
+    
+    run:
+        for i in range(len(input.feature_files)):
+            input_file = input.feature_files[i]
+            output_file = output.counts_files[i]
+            shell("Rscript {input.script}" f" -i {input_file} -o {output_file} -a ../data/annotations/")
