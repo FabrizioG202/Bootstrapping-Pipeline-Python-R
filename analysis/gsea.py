@@ -65,11 +65,22 @@ if __name__ == "__main__":
                 # Adding the value
                 enrichment[set_name] = (p_value, odds_ratio, hits_in_sample)
 
-            with open(output_path, "w") as f:
-                # Add an header
-                f.write("Set\tp-value\todds-ratio\tsample\n")
-                for name, (p_value, odds_ratio, hits_in_sample) in sorted(enrichment.items(), key=lambda x: x[1][0]):
-                    f.write("{}\t{}\t{}\t{}\n".format(name, p_value, odds_ratio, hits_in_sample))
+
+            # apply FDR correction
+            print("Applying FDR correction...")
+            enrichment = {set_name: (p_value, odds_ratio, hits_in_sample) for set_name, (p_value, odds_ratio, hits_in_sample) in enrichment.items()}
+                        
+            # Convert to a dataframe
+            import pandas as pd
+            enrichment = pd.DataFrame.from_dict(enrichment, orient="index")
+            enrichment.columns = ["p_value", "odds_ratio", "hits_in_sample"]
+            enrichment.sort_values(by="p_value", inplace=True)
+            import statsmodels.stats.multitest as sm
+            pvalues = enrichment["p_value"]
+            corrected_pvalues = sm.multipletests(pvalues, method="fdr_bh")[1]
+            enrichment["q_value"] = corrected_pvalues
+            enrichment.sort_values(by="q_value", inplace=True)
+            enrichment.to_csv(output_path, sep="\t", index=True, header=True)
 
             print(green("Saved to {}".format(output_path)))
 
