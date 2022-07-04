@@ -1,13 +1,19 @@
+# The Q-values to use for the enrichment analysis.
 qvalues: "../results/qvalues/HMEC.CAGE.tsv"
+
+# the folder containing the clusters in a JSON format
 clusters_folder: "../data/clusters/HMEC"
 
-
+# The output folder
 tmp_folder: "../results/GSEA/"
 
+# The feature file (the active features in the given cell line)
 features : "../data/features/HMEC/CAGE/features.bed"
 
+# FANTOM5 data (peak types, peak to ENTREZ Id and ontology path) 
 fantom5_peak_types : "../data/fantom5/peak_types.tsv"
 fantom5_peak_to_entrez : "../data/fantom5/peak_to_entrez.tsv"
 fantom5_ontology_path : "../data/fantom5/ontology.gmt"
+
 
 tss_radius: 200

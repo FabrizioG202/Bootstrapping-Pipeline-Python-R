@@ -1,6 +1,7 @@
-# Unibind enrichment
-This pipeline provides a way to generate the files necessary to perform Transcription Factor Binding Site enrichment analysis using the [Unibind Enrichment Tool ](https://unibind.uio.no/enrichment/).
+# Unibind Enrichment Pipeline:
+This pipeline creates the necessary files to run the enrichment analysis using Unibind Enrichment tool (https://unibind.uio.no/enrichment/). It creates 3 files for each cell line:
+- Foreground (The reads inside the given trascriptional hubs (enriched clusters) which belong to enhancer regions)
+- Active (All the enhancer reads in the given cell line)
+- Full (All the enhancer reads in the FANTOM5 data)
 
-It takes as an input...
-
-And outputs 3 files, one containing mapping to enhancer (in the FANTOM5 database) which are contained inside putative transcriptional Hubs and the other containing all the enhancer active in the cell line, that is all the enhancers which map to a peak in the FANTOM5 database. 
+(The TSS pipeliene is not enabled right now)

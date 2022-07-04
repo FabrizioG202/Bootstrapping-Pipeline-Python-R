@@ -45,39 +45,15 @@ if __name__ == "__main__":
 
     match argv:
         
-        case [_, "filter", source_bed_path, fantom_5_path, *args]:
-            # read the peak type as a dict.
-            peak_types = parse_fantom_peak_type_data(fantom_5_path)
-            
-            out_file_path = args[0] if len(args) > 0 else replace_extension(source_bed_path, "fantom5.types")
-            
-            with open(source_bed_path, "r") as source_bed_file, open(out_file_path, "w") as out_file:
-                
-                # Looping over the lines
-                for i, line in enumerate(source_bed_file.readlines()):
-                    
-                    # skip headers
-                    if line.startswith("#"):
-                        continue
-                
-                    # split the line and get the peak name.
-                    try:
-                        peak_name = line.split("\t")[3].strip()
-                    except IndexError:
-                        print("Error: line {} is not in the expected format.".format(i))
-                        print(source_bed_path)
-                    peak_type = peak_types.get(peak_name, None)
-                    if peak_type is None:
-                        print(peak_name)
-                        continue
+        # Gets the ranges in the provided [source_bed_path] which are of the asked type (tss or enhancer)
+        # And writes the filtered one to output path
+        case [_, "getRanges", "enhancer" | "tss"  as peak_type, source_bed_path, fantom_5_peak_types_path, out_path, *args]:
 
-                    out_file.write(f"{peak_name}\t{peak_types[peak_name]}\n")
+            #Parse the fantom peak type data
+            peak_types = parse_fantom_peak_type_data(fantom_5_peak_types_path)
 
-            print(green("Successfully filtered the peaks and wrote to:" +  out_file_path))
-
-
-        case [_, "getRanges", "enhancer" | "tss" as peak_type, source_types_path, out_path, *args]:
-
+            # ask for a radius if the user required the TSS.
+            tss_radius = None
             if peak_type == "tss":
                 if len(args) == 0:
                     print(red("Please provide a radius for the TSS extraction!"))
@@ -85,31 +61,47 @@ if __name__ == "__main__":
                 else:
                     tss_radius = int(args[0])
             
+            # Diagnostics:
+            not_in_fantom_5 = 0
             count = 0
-            
-            with open(source_types_path, "r") as source_types_file, open(out_path, "w") as out_file:
-                for i, line in enumerate(source_types_file.readlines()):
+            with open(source_bed_path, "r") as source_bed, open(out_path, "w") as out_file:
+                for i, line in enumerate(source_bed.readlines()):
+                    
+                    # Skip header
                     if line.startswith("#"):
                         continue
                     
-                    peak_name, pt = line.split("\t")
-                    peak_name = peak_name.strip()
-                    pt = pt.strip()
+                    # read the bed line
+                    chromo, start, end, id_, *rest = line.split("\t")
+                    chromo = chromo.strip()
+                    start = int(start)
+                    end = int(end)
 
-                    if peak_type != pt:
+                    # Extract the id of the peak
+                    id_ = id_.strip()
+
+                    # Get the peak type
+                    this_peak_type = peak_types.get(id_, None)
+
+                    # If the peak type is not in the fantom 5 peak types, skip it
+                    if this_peak_type is None:
+                        not_in_fantom_5 += 1
                         continue
 
-                    chromo, start, end = extract_ranges_from_name(peak_name)
-                    
+                    # now check that the peak is of the requested type.
+                    if this_peak_type != peak_type:
+                        continue
+
                     if peak_type == "tss":
                         start = start - tss_radius
                         end = end + tss_radius
-
-                    out_file.write(f"{chromo}\t{start}\t{end}\n")
+                    
+                    # Write the line to the output file
+                    out_file.write("{}\t{}\t{}\t{}\n".format(chromo, start, end, id_))
                     count += 1
 
             
-            print(green(f"Successfully extracted {count} ranges to: " +  out_path))
+            print(f"Successfully extracted {green(count)} ranges to: " +  out_path  + " with {} peaks not mapped in fantom 5".format(red(not_in_fantom_5)))
 
         case [_, "countTypes", source_types_path, *args]:
             file = open(source_types_path, "r")
@@ -131,11 +123,11 @@ if __name__ == "__main__":
                 
             print(f"Enhancers: {blue(enhancer_count)}, TSS: {green(tss_count)}")
 
-        case [_, "getEntrez", source_types_path, peak_to_entrez_path, out_path]:
+        # Saves a list of the entrez ids of the peaks in the provided [source_bed_path]
+        case [_, "getEntrez", source_bed_path, peak_to_entrez_path, out_path]:
+        
             
-            # Read the peak file
-            peak_file = open(source_types_path, "r")
-            
+
             # the resulting ids
             ids = []
 
@@ -148,32 +140,35 @@ if __name__ == "__main__":
             nas = 0
             
             # loop over the lines of the file (they are in a type-like format (CAGE.ID, peak_type)))
-            for line in peak_file.readlines():
-                # skip headers
-                if line.startswith("#"):
-                    continue
+            with open(source_bed_path, "r") as source_bed:
                     
-                # split the line and get the peak name.
-                peak_name, pt = line.split("\t")
-                peak_name = peak_name.strip()
+                for line in source_bed.readlines():
 
-                # get the entrez id for the peak name
-                entrez_id = peaks_to_entrez.get(peak_name, None)
-                if entrez_id is None:
-                    unmapped += 1
-                    continue
+                    # skip headers
+                    if line.startswith("#"):
+                        continue
+                        
+                    # split the line
+                    chromo, start, end, peak_id, *rest = line.split("\t")
+                    peak_id = peak_id.strip()
+                    
+                    # get the entrez id for the peak name
+                    entrez_id = peaks_to_entrez.get(peak_id, None)
+                    
+                    if entrez_id is None:
+                        unmapped += 1
+                        continue
 
-                elif entrez_id == "NA":
-                    nas += 1
-                    continue
+                    elif entrez_id == "NA":
+                        nas += 1
+                        continue
 
-                # add the entrez id to the list
-                ids.append(entrez_id)
-                mapped += 1
+                    # add the entrez id to the list
+                    ids.append(entrez_id)
+                    mapped += 1
 
             # Remove the duplicates
             ids = list(set(ids))
-
 
             # write the ids to a file
             with open(out_path, "w") as out_file:
@@ -182,44 +177,29 @@ if __name__ == "__main__":
 
 
             # Print some diagnostics
-            print(f"Mapping Finished: Mapped: {green(mapped)}, Unmapped: {red(unmapped)}, NA: {yellow(nas)}")
-
-            # print that the file was written
-            print(green(f"Successfully wrote the entrez ids to: " +  out_path))
-
-        case [_, "background", "enhancer" | "tss" | "all" as peak_type, source_types_path, out_path, *args]:
+            print(f"Mapping Finished: Mapped: {green(mapped)}, Unmapped: {red(unmapped)}, NA: {yellow(nas)}, file saved to {out_path}")
+       
+        case [_, "fullBackground", "enhancer" | "tss" as peak_type, fantom_5_peak_types_path, out_path, ]:
             
-            file = open(source_types_path, "r")
-            out_file = open(out_path, "w")
-
-            if peak_type == "tss":
-                if len(args) == 0:
-                    print(red("Please provide a radius for the TSS extraction!"))
-                    exit(1)
-                else:
-                    tss_radius = int(args[0])
-            
-
-            with open(source_types_path, "r") as source_types_file, open(out_path, "w") as out_file:
-                for i, line in enumerate(source_types_file.readlines()):
+            with open(fantom_5_peak_types_path, "r") as fantom_5_peaks, open(out_path, "w") as out_file:
+                for i, line in enumerate(fantom_5_peaks.readlines()):
                     if line.startswith("#"):
                         continue
-                    
+
                     peak_name,  pt = line.split("\t")
                     peak_name = peak_name.strip()
                     pt = pt.strip()
 
-                    if peak_type != "all" and peak_type != pt:
+                    # Get only the required peak types
+                    if peak_type != pt:
                         continue
                     
-
+                    # Get the chromo, start and end
                     chromo, start, end = extract_ranges_from_name(peak_name)
 
-                    if peak_type == "tss":
-                        start = start - tss_radius
-                        end = end + tss_radius
+                    # Write the line to the file
+                    out_file.write(f"{chromo}\t{start}\t{end}\t{peak_name}\n")
 
-                    out_file.write(f"{chromo}\t{start}\t{end}\n")
 
         case [_, "typesTable", foreground_types_path, background_types_path, out_path]:
             foreground_types = count_peak_types(foreground_types_path)

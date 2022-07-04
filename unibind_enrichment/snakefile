@@ -17,14 +17,14 @@ rule all:
     input:
         #All the outputs form lift_and_filter.
         files = [
-            tmp_folder + "/" + f"{tss_name}.bed",
-            tmp_folder + "/" + f"{tss_name}_background.bed",
-            tmp_folder + "/" + "enhancers.bed",
-            tmp_folder + "/" + "enhancers_background.bed"
+            tmp_folder + "/" + "foreground_enhancers.bed",
+            tmp_folder + "/" + "active_enhancers.bed",
+            tmp_folder + "/" + "full_enhancers.bed",
             ],
-        # The table
-        peak_table = tmp_folder + "/" + "types_counts.tsv",
+        # # The table
+        # peak_table = tmp_folder + "/" + "types_counts.tsv",
 
+# Converts the CLUS file to a BED file.
 rule clus_to_bed:
     input:
         script = "../analysis/clus_io.py",
@@ -34,8 +34,7 @@ rule clus_to_bed:
     shell:
         "python {input.script} clus2bed" f" {clusters_folder}" " {input.clus} {output.bed}"
 
-
-#This rule transform whatever is the q values into a clus file.
+# Converts a TSV file to a CLUS file.
 rule tsv_to_clus:
     input:
         script = "../analysis/clus_io.py",
@@ -46,7 +45,8 @@ rule tsv_to_clus:
         "python {input.script} tsv2clus {input.qvalues} {output.clus}"
 
 
-#This rule intersects the clusters ranges with the features (features active in the given cell line).
+# This rule intersects the clusters ranges with the features (features active in the given cell line).
+# And basically gets the reads in the foreground. (Both TSSs and Enhancers).
 rule intersect_clusters:
     input:
         script = "../analysis/bed_utils.py",
@@ -58,86 +58,56 @@ rule intersect_clusters:
     shell:
         "python {input.script} intersect" " {input.features} {input.bed} {output.inside}"
 
-# This rule filters the features to the ones which have a correspondent entry in the FANTOM5 data
-rule get_foreground_types:
-    input: 
+
+# This rule creates the foreground.
+rule get_foreground_enhancers:
+    input:
         script = "../analysis/fantom5_utils.py",
         inside = tmp_folder + "/" + "_inside.bed",
-        peak_types = fantom5_peak_types
     output:
-        filtered = temp(tmp_folder + "/" + "_inside.types")
+        foreground_enhancers = temp(tmp_folder + "/" + "_foreground_enhancers.bed"),
     shell:
-        "python {input.script} filter" " {input.inside} {input.peak_types} {output.filtered}"
+        "python {input.script} getRanges enhancer {input.inside}" f" {fantom5_peak_types}" " {output.foreground_enhancers}"
 
-# This rule filters the background features to the ones which have a correspondent entry in the FANTOM5 data
-rule get_background_types:
-    input: 
+# This rule creates the background (the active peaks)
+rule get_background_enhancers:
+    input:
         script = "../analysis/fantom5_utils.py",
         features = features,
-        peak_types = fantom5_peak_types
     output:
-        background_filtered = temp(tmp_folder + "/" + "_background.types")
+        active_enhancers = temp(tmp_folder + "/" + "_active_enhancers.bed"),
     shell:
-        "python {input.script} filter" " {input.features} {input.peak_types} {output.background_filtered}"
+        "python {input.script} getRanges enhancer {input.features}" f" {fantom5_peak_types} " " {output.active_enhancers}"
 
 
-# This rule creates the background.
-rule get_enhancers:
+# This rule creates the full background (all fantom5 peaks)
+rule get_full_background_enhancers:
     input:
         script = "../analysis/fantom5_utils.py",
-        filtered = tmp_folder + "/" + "_inside.types"
+        inside = tmp_folder + "/" + "_inside.bed",
     output:
-        enhancers = temp(tmp_folder + "/" + "_enhancers.bed"),
+        full_enhancers = temp(tmp_folder + "/" + "_full_enhancers.bed"),
     shell:
-        "python {input.script} getRanges enhancer " " {input.filtered} {output.enhancers}"
-
-rule get_enhancers_background:
-    input:
-        script = "../analysis/fantom5_utils.py",
-        background_filtered = tmp_folder + "/" + "_background.types"
-    output:
-        background = temp(tmp_folder + "/" + "_enhancers_background.bed")
-    shell:
-        "python {input.script} background enhancer " " {input.background_filtered} {output.background}"
+        "python {input.script} fullBackground enhancer" f" {fantom5_peak_types}" " {output.full_enhancers}"
 
 
-rule get_tss:
-    input:
-        script = "../analysis/fantom5_utils.py",
-        filtered = tmp_folder + "/" + "_inside.types"
-    output:
-        tss = temp(tmp_folder + "/" + f"_{tss_name}.bed")
-    shell:
-        "python {input.script} getRanges tss " " {input.filtered} {output.tss} "  f"{tss_radius}"
-
-
-rule get_tss_background:
-    input:
-        script = "../analysis/fantom5_utils.py",
-        background_filtered = tmp_folder + "/" + "_background.types"
-    output:
-        background = temp(tmp_folder + "/" + f"_{tss_name}_background.bed")
-    shell:
-        "python {input.script} background tss " " {input.background_filtered} {output.background} " f"{tss_radius}"
 
 rule lift_and_filter:
     input:
         # All the files.
         files = [
-            tmp_folder + "/" + f"_{tss_name}.bed", 
-            tmp_folder + "/" + f"_{tss_name}_background.bed", 
-            tmp_folder + "/" + "_enhancers.bed", 
-            tmp_folder + "/" + "_enhancers_background.bed"
+            tmp_folder + "/" + "_foreground_enhancers.bed",
+            tmp_folder + "/" + "_active_enhancers.bed",
+            tmp_folder + "/" + "_full_enhancers.bed",
             ],
         # The script to use.
         lift_over_script = "../analysis/lift_over.py",
         filter_script = "../analysis/bed_utils.py"
     output:
         files = [
-            tmp_folder + "/" + f"{tss_name}.bed", 
-            tmp_folder + "/" + f"{tss_name}_background.bed", 
-            tmp_folder + "/" + "enhancers.bed", 
-            tmp_folder + "/" + "enhancers_background.bed"
+            tmp_folder + "/" + "foreground_enhancers.bed",
+            tmp_folder + "/" + "active_enhancers.bed",
+            tmp_folder + "/" + "full_enhancers.bed",
             ],
 
     run:
