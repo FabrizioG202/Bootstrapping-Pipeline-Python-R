@@ -1,3 +1,6 @@
+# 4.7.2022 .1
+- Fixed the filtering for the python and R bootstrapping pipeline.
+
 # 21.6.2022 .2
 - Fixed the fine enrichment pipeline.
 # 21.6.2022 .1

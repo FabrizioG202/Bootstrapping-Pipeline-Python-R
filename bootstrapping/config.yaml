@@ -1,0 +1,10 @@
+bootstraps: 10
+
+# Leave Blank to make the pipeline run on all the cell types.
+cell_types: 
+
+# Leave Blank to make the pipeline run on all the features.
+features: 
+
+# Leave Blank to make the pipeline run on all the combinations.
+combinations: 

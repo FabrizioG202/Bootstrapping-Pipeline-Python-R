@@ -1,16 +1,5 @@
 # Adding the configuration file.
-configfile: "./workflow/config.yaml"
-
-# import module common from path: "../../../../common"
-import importlib.util
-import sys, os
-spec = importlib.util.spec_from_file_location("parsers", "../common/parsers.py")
-parsers = importlib.util.module_from_spec(spec)
-sys.modules["parsers"] = parsers
-spec.loader.exec_module(parsers)
-
-# The path for the filtering.
-FILTER_PATH = "./workflow/filter.txt"
+configfile: "../config.yaml"
 
 # Color stuff.
 def red(text):
@@ -25,32 +14,48 @@ def yellow(text):
 def blue(text):
     return("\033[94m{}\033[00m".format(text))
 
-# importing stuff
-import os
+def italic(text):
+    return("\033[3m{}\033[00m".format(text))
 
 # the specification of the provided features
 # Grabbing the features which are in a RDA format.
 specs = glob_wildcards("../../data/features/{cell_line}/{feature_type}/{file_name}")
-def italic(text):
-    return("\033[3m{}\033[00m".format(text))
 
 # Getting all the values from the wildcards
 CELL_LINES = specs.cell_line
 FEATURE_TYPES = specs.feature_type
-FILE_NAMES = specs.file_name
-features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
-before_ = len(features)
-features = parsers.parse_filter_file(FILTER_PATH).filter(features)
-print(f"{yellow('Filtering done: ')} from {before_} features to {len(features)} features. (total {yellow(-len(features) + before_)} removed)")
-print("\nUsing this files:")
-for cell_line, feature_type, file_name in features:
-    print(f"{red(cell_line)}-{yellow(feature_type)} ({italic(file_name)})")
 
+# parse the data from the config file.
+SELECTED_CELL_TYPES = config["cell_types"]
+SELECTED_FEATURES = config["features"]
+SELECTED_COMBINATIONS = config["combinations"]
+FILE_NAMES = specs.file_name
 # Reading the thing from the configuration file.
 BOOTSTRAPS = config["bootstraps"]
-print()
-print("Running Python Pipeline with {} bootstraps".format(yellow(BOOTSTRAPS)))
-print()
+
+# Parsing all the features
+features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
+
+# filter the features
+filtered_features = []
+for feature in features:
+    if SELECTED_CELL_TYPES:
+        if feature[0] not in SELECTED_CELL_TYPES:
+            continue
+    if SELECTED_FEATURES:
+        if feature[1] not in SELECTED_FEATURES:
+            continue
+    
+    filtered_features.append(feature)
+
+
+print("Running the workflow for the following features with {} bootstraps:".format(yellow(BOOTSTRAPS)))
+# Print the features like this: 
+# cell type (red) - feature type (yellow) (file name) (italic)
+for feature in filtered_features:
+    print("{} - {} ({})".format(red(feature[0]), yellow(feature[1]), italic(feature[2])))
+
+features = filtered_features
 
 # Computing the pvalues.
 rule compute_pvalue:

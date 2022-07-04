@@ -1,53 +1,67 @@
 # Adding the configuration file.
-configfile: "./workflow/config.yaml"
+configfile: "../config.yaml"
 
-# Importing the OS module.
-import os
+# Color stuff.
+def red(text):
+    return("\033[91m{}\033[00m".format(text))
 
+def green(text):
+    return("\033[92m{}\033[00m".format(text))
 
-# Prints text in Green
-def green(text:str) -> str:
-    return f"\033[32m{text}\033[0m"
+def yellow(text):
+    return("\033[93m{}\033[00m".format(text))
 
-# Prints text in Yellow
-def yellow(text:str) -> str:
-    return f"\033[33m{text}\033[0m"
+def blue(text):
+    return("\033[94m{}\033[00m".format(text))
 
-# Prints text in red
-def red(text:str) -> str:
-    return f"\033[31m{text}\033[0m"
+def italic(text):
+    return("\033[3m{}\033[00m".format(text))
 
 # the specification of the provided features
 # Grabbing the features which are in a RDA format.
-specs = glob_wildcards("../../data/features/{cell_line}/{feature_type}/{file_name}.{suffix}")
+specs = glob_wildcards("../../data/features/{cell_line}/{feature_type}/{file_name}")
 
 # Getting all the values from the wildcards
 CELL_LINES = specs.cell_line
 FEATURE_TYPES = specs.feature_type
+
+# parse the data from the config file.
+SELECTED_CELL_TYPES = config["cell_types"]
+SELECTED_FEATURES = config["features"]
+SELECTED_COMBINATIONS = config["combinations"]
 FILE_NAMES = specs.file_name
-SUFFIXES = specs.suffix #! the suffixes need to be lowercased before they are used (some files are BED and other are 'bed')
-
-# Zipping them in a list of tuples
-WRAP_TASKS = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES, SUFFIXES))
-
-# The specificaiton provided by the clusters:
-CLUSTER_SPECS = glob_wildcards("../../data/rda_clusters/{cell_line}/{cluster_file_name}.Rda")
-
-# This are the cell lines detected from the file names.
-CLUS_CELL_LINES =set(CLUSTER_SPECS.cell_line)
 
 # Reading the thing from the configuration file.
 BOOTSTRAPS = config["bootstraps"]
-print("Running Python Pipeline with {} bootstraps".format(yellow(BOOTSTRAPS)))
 
-# Logging the values:
-print(green("The following features will be used:"))
-for cell_line, feature_type, file_name, suffix in WRAP_TASKS:
-    print(f"\t-{cell_line} - {feature_type} - ({suffix} file)")
+# Parsing all the features
+features = list(zip(CELL_LINES, FEATURE_TYPES, FILE_NAMES))
 
-print(green("The clusters from the following cell lines will be used:"))
-for cell_line in CLUS_CELL_LINES:
-    print(f"\t-{cell_line}")
+# filter the features
+filtered_features = []
+for feature in features:
+    if SELECTED_CELL_TYPES:
+        if feature[0] not in SELECTED_CELL_TYPES:
+            continue
+    if SELECTED_FEATURES:
+        if feature[1] not in SELECTED_FEATURES:
+            continue
+    
+    filtered_features.append(feature)
+
+print("Running the workflow for the following features with {} bootstraps:".format(yellow(BOOTSTRAPS)))
+# Print the features like this: 
+# cell type (red) - feature type (yellow) (file name) (italic)
+for feature in filtered_features:
+    print("{} - {} ({})".format(red(feature[0]), yellow(feature[1]), italic(feature[2])))
+
+# Wrap task is just the same list as the filtered_features one but with a fourth value for each which is the file extension.
+# This is used to create the output file names.
+WRAP_TASKS = []
+for feature in filtered_features:
+    WRAP_TASKS.append((feature[0], feature[1], ".".join(feature[2].split(".")[:-1]), feature[2].split(".")[-1]))
+
+CLUS_CELL_LINES = list(set([f[0] for f in filtered_features]))
 
 # Wraps the given features into a GenomicRange object to speed up further computations
 rule wrap_features:
