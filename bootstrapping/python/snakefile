@@ -48,13 +48,14 @@ for feature in features:
     
     filtered_features.append(feature)
 
-
+print("-"*50)
 print("Running the workflow for the following features with {} bootstraps:".format(yellow(BOOTSTRAPS)))
 # Print the features like this: 
 # cell type (red) - feature type (yellow) (file name) (italic)
 for feature in filtered_features:
     print("{} - {} ({})".format(red(feature[0]), yellow(feature[1]), italic(feature[2])))
-
+print("-"*50)
+print()
 features = filtered_features
 
 # Computing the pvalues.

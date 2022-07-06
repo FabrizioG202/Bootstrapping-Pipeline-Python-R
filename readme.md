@@ -2,10 +2,11 @@
 This repository contains the following pipelines:
 ## Boostrapping pipeline 1 (CAGE Enrichment):
 Identify clusters which are enriched in a particular feature set using bootstrapping. To do so, a large amount of random genomes are generated.
-Outputs to: _results/pvalues/_
+Outputs to: _results/enrichment/_
 
 ### Filtering:
 It is possible to choose the data on which the pipeline is run. To do so edit the config.yaml file in the bootstrapping folder. 
+Check that all the feature you need are being printed out when running the pipeline.
 
 ## Boostrapping pipeline 2 (CTCF Enrichment):
 Produce CTCF (or any other feature) enrichment along the 3D genome.

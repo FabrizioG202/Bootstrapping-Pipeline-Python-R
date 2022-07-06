@@ -2,9 +2,13 @@ bootstraps: 10
 
 # Leave Blank to make the pipeline run on all the cell types.
 cell_types: 
+  - H1
+  - HMEC
+  - GM12878
 
 # Leave Blank to make the pipeline run on all the features.
-features: 
+features:
+  - CAGE
 
 # Leave Blank to make the pipeline run on all the combinations.
 combinations: 
