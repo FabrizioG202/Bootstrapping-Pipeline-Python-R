@@ -1,18 +1,19 @@
-
 # The QVALUES table, used to extract the enriched clusters.
-qvalues: "../results/qvalues/GM12878.CAGE.tsv"
+qvalues: "../results/qvalues/HMEC.CAGE.tsv"
 
 # The folder containing the clusters in a JSON format.
-clusters_folder: "../data/clusters/GM12878"
+clusters_folder: "../data/clusters/HMEC"
 
 # The output folder
-tmp_folder: "../results/unibind_enrichment/GM12878/CAGE"
+tmp_folder: "../results/unibind_enrichment/HMEC/CAGE"
 
 # The feature file (the active features in the given cell line)
-features : "../data/features/GM12878/CAGE/features.bed"
+features : "../data/features/HMEC/CAGE/features.bed"
 
 # The Fantom5 peak type file, which maps each reads to its peak type (enhancer or tss)
 fantom5_peak_types : "../data/fantom5/peak_types.tsv"
 
 # The radius of the neighborhood around each TSS peak.
 tss_radius: 200
+
+bed_output: "../results/hubs/HMEC_CAGE.bed"

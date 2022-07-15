@@ -8,11 +8,22 @@ features = config["features"]
 fantom5_peak_types = config["fantom5_peak_types"]
 tss_radius = config["tss_radius"]
 
+
+bed_output = config["bed_output"]
+
 tss_name = f"tss_{tss_radius}bp"
 
+### Just a snipped to print the given string in red for better readability.
 def red(text):
     return "\033[1;31m" + text + "\033[0m"
 
+### ---
+### the main rule which leads to the execution of everything.
+### Requires the following files:
+###    - foreground enhancers.bed → the enhancers in the foreground (inside the clusters)
+###    - active enhancers.bed → the enhancers in the restrictive background (all the enhacers in the feature file)
+###    - full_enhancers.bed → the enhancers in the whole fantom5 cage data set (any cell line)
+### --- 
 rule all:
     input:
         #All the outputs form lift_and_filter.
@@ -22,19 +33,11 @@ rule all:
             tmp_folder + "/" + "full_enhancers.bed",
             ],
         # # The table
-        # peak_table = tmp_folder + "/" + "types_counts.tsv",
+        peak_table = tmp_folder + "/" + "types_counts.tsv",
 
-# Converts the CLUS file to a BED file.
-rule clus_to_bed:
-    input:
-        script = "../analysis/clus_io.py",
-        clus = tmp_folder + "/" + "_qvalues.clus"
-    output: 
-        bed = temp(tmp_folder + "/" + "_qvalues.bed")
-    shell:
-        "python {input.script} clus2bed" f" {clusters_folder}" " {input.clus} {output.bed}"
-
-# Converts a TSV file to a CLUS file.
+### ---
+### Converts the TSV file (containing the enriched clusters) to a CLUS file.
+### --- 
 rule tsv_to_clus:
     input:
         script = "../analysis/clus_io.py",
@@ -45,8 +48,24 @@ rule tsv_to_clus:
         "python {input.script} tsv2clus {input.qvalues} {output.clus}"
 
 
-# This rule intersects the clusters ranges with the features (features active in the given cell line).
-# And basically gets the reads in the foreground. (Both TSSs and Enhancers).
+### ---
+### Converts the CLUS file containing the names of the enriched clusters to a BED file extracting the ranges from the JSON
+### A CLUS file is just a file in the following shape:
+### chr1 cluster_1  cluster_2 cluster_3
+### ---
+rule clus_to_bed:
+    input:
+        script = "../analysis/clus_io.py",
+        clus = tmp_folder + "/" + "_qvalues.clus"
+    output: 
+        bed = temp(tmp_folder + "/" + "_qvalues.bed")
+    shell:
+        "python {input.script} clus2bed" f" {clusters_folder}" " {input.clus} {output.bed}"
+
+### ---
+### This rule intersects the clusters ranges with the features (features active in the given cell line).
+### And basically gets the reads in the foreground. (Both TSSs and Enhancers).
+### ---
 rule intersect_clusters:
     input:
         script = "../analysis/bed_utils.py",
@@ -58,8 +77,9 @@ rule intersect_clusters:
     shell:
         "python {input.script} intersect" " {input.features} {input.bed} {output.inside}"
 
-
-# This rule creates the foreground.
+### ---
+### This rule creates the FOREGROUND which is the list of enhancers inside the clusters.
+### ---
 rule get_foreground_enhancers:
     input:
         script = "../analysis/fantom5_utils.py",
@@ -69,7 +89,9 @@ rule get_foreground_enhancers:
     shell:
         "python {input.script} getRanges enhancer {input.inside}" f" {fantom5_peak_types}" " {output.foreground_enhancers}"
 
-# This rule creates the background (the active peaks)
+### ---
+### This rule creates the RESTRICTIVE BACKGROUND (the active peaks)
+### --- 
 rule get_background_enhancers:
     input:
         script = "../analysis/fantom5_utils.py",
@@ -79,8 +101,9 @@ rule get_background_enhancers:
     shell:
         "python {input.script} getRanges enhancer {input.features}" f" {fantom5_peak_types} " " {output.active_enhancers}"
 
-
-# This rule creates the full background (all fantom5 peaks)
+### ---
+### This rule creates the FULL BACKGROUND (all fantom5 peaks)
+### ---
 rule get_full_background_enhancers:
     input:
         script = "../analysis/fantom5_utils.py",
@@ -91,7 +114,9 @@ rule get_full_background_enhancers:
         "python {input.script} fullBackground enhancer" f" {fantom5_peak_types}" " {output.full_enhancers}"
 
 
-
+### ---
+### This rule lifts the ranges in the required bed file to assembly hg38 and filters by keeping only the autosomal chromosomes (as we do not have clusters belonging to X, Y or M chromosomes)
+### ---
 rule lift_and_filter:
     input:
         # All the files.
@@ -120,13 +145,51 @@ rule lift_and_filter:
             # lift over
             shell("python {input.lift_over_script} " f" {f} hg19 hg38 {o}")
 
+
+# rule create_all_background:
+#     input:
+#         script = "../analysis/fantom5_utils.py",
+#         source_bed = features,
+#         peak_types = fantom5_peak_types,
+
+#     output:
+#         all_types_background = temp(tmp_folder + "/" + "all_types_background.bed"),
+    
+#     shell:
+#         "python {input.script} getRanges all " "{input.source_bed} {input.peak_types} {output.all_types_background}"
+
+
+### ---
+### This rule creates the table with the counts of the peaks in the clusters.
+### The table is structured as follows:
+###         | tss | enhancer | unknown  |
+###         |-----|----------|----------|
+### inside  |     |          |          |
+### outside |     |          |          |
+### ---
 rule create_types_table:
     input:
         script = "../analysis/fantom5_utils.py",
-        foreground_types = tmp_folder + "/" + "_inside.types",
-        background_types = tmp_folder + "/" + "_background.types",
+        foreground_bed_file = tmp_folder + "/" + "_inside.bed",
+        all_types_background = features,
+        peak_types = fantom5_peak_types,
+
     output:
         peak_table = tmp_folder + "/" + "types_counts.tsv"
     
     shell:
-        "python {input.script} typesTable " " {input.foreground_types} {input.background_types} {output.peak_table}"
+        "python {input.script} typesTable " " {input.foreground_bed_file} {input.all_types_background} {input.peak_types} {output.peak_table}"
+
+
+### ---
+### This rule converts the TSV file to a BED file
+### It's not included in the default pipeline and can be invoked as a standalone rule to convert the q-values to a BED file.
+### ---  
+rule to_bed:
+    input:
+        script = "../analysis/clus_io.py",
+        clus = tmp_folder + "/" + "_qvalues.clus"
+    output: 
+        bed = bed_output
+    shell:
+        "python {input.script} clus2bed" f" {clusters_folder}" " {input.clus} {output.bed}"

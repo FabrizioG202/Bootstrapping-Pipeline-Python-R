@@ -1,4 +1,4 @@
-bootstraps: 10
+bootstraps: 100_000
 
 # Leave Blank to make the pipeline run on all the cell types.
 cell_types: 

@@ -8,6 +8,7 @@ features = config["features"]
 
 fantom5_peak_to_entrez = config["fantom5_peak_to_entrez"]
 fantom5_ontology_path = config["fantom5_ontology_path"]
+output_filename = config["output"]
 
 
 def red(text):
@@ -15,7 +16,7 @@ def red(text):
 
 rule all:
     input:
-        gsea_output = tmp_folder + "/" + "enrichment.tsv"
+        gsea_output = tmp_folder + "/" + output_filename
 
 # Convert CLUS file to BED file
 rule clus_to_bed:
@@ -58,7 +59,7 @@ rule run_gsea:
         foreground_entrez_ids = tmp_folder + "/" + "_foreground_entrez_ids.txt",
         background_entrez_ids = tmp_folder + "/" + "_background_entrez_ids.txt"
     output:
-        gsea_output = tmp_folder + "/" + "enrichment.tsv"
+        gsea_output = tmp_folder + "/" + output_filename
     shell:
         "python {input.script} {input.foreground_entrez_ids} {input.background_entrez_ids} {fantom5_ontology_path} {output.gsea_output}" 
 

@@ -5,3 +5,6 @@ data/hi-C/
 **/.snakemake
 **/__pycache__
 tmp/
+
+stuff/
+figures/

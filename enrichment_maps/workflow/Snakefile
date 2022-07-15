@@ -24,6 +24,9 @@ BOOTSTRAPS = config["bootstraps"]
 CELL_LINE = config["cell_line"]
 FEATURE_TYPE = config["feature_type"]
 
+# the output folder
+OUTPUT_FOLDER = config["output_folder"]
+
 # IF the resolution is not a list make it into a list of just 1 element:
 if not isinstance(RESOLUTION,list):
     RESOLUTION = [RESOLUTION]
@@ -49,7 +52,6 @@ if isinstance(FEATURE_TYPE, str):
         features = [(FEATURE_TYPE, get_first_file_in_dir("../data/features/" + CELL_LINE + "/" + FEATURE_TYPE))]
 else:
     features = [(x, get_first_file_in_dir("../data/features/" + CELL_LINE + "/" + x)) for x in FEATURE_TYPE]
-
 
 def format_resolution(resolution : int):
     suffixes = ["", "k", "m", "g"]
@@ -96,9 +98,6 @@ rule compute_enrichment_maps:
         bootstraps = BOOTSTRAPS
     benchmark:
         "../benchmarks/enrichment.tsv"
-        
-    output: 
-        "txt"
     run:
         # make the directory if it does not already exist.
         if not os.path.exists("../results/fine_enrichment"):
@@ -107,7 +106,7 @@ rule compute_enrichment_maps:
         for i in range(len(input.feature_file)):
             input_file = input.feature_file[i]
             feature_type = features[i][0]
-            base_folder = "../results/fine_enrichment/" + CELL_LINE + "/" + feature_type + "/" 
+            base_folder = OUTPUT_FOLDER + CELL_LINE + "/" + feature_type + "/" 
             counts_file = input.counts_file[i]
             for chromo in CHROMOSOMES:
                 for resolution in RESOLUTION:

@@ -20,25 +20,31 @@ def extract_ranges_from_name(name :str) -> tuple[str, int, int]:
     
     return chromo, int(start), int(end)
 
-def count_peak_types(path : str) -> tuple[int, int]:
+def count_peak_types(path : str, peak_types_dict : dict) -> tuple[int, int]:
     """
     Count the number of peaks in a peak file.
     """
     tss_ = 0
     enhancer_ = 0
+    unknown_ = 0
     with open(path, "r") as f:
         for line in f.readlines():
             if line.startswith("#"):
                 continue
             else:
-                type_ = line.split("\t")[1].strip()
-                if type_ == "tss":
+                chr_, start_, end_, peak_id, *_ = line.split("\t")
+                peak_id = peak_id.strip()
+                peak_type = peak_types_dict.get(peak_id, "").strip()
+                if peak_type == "tss":
                     tss_ += 1
-                elif type_ == "enhancer":
+                elif peak_type == "enhancer":
                     enhancer_ += 1
                 else:
-                    raise ValueError("Unknown peak type: {}".format(type_))
-    return tss_, enhancer_
+                    unknown_ += 1
+                    print(f"Unknown peak type: {peak_type}, for peak id: {peak_id}")
+                    
+                
+    return tss_, enhancer_, unknown_
 
 if __name__ == "__main__":
     argv = sys.argv
@@ -47,7 +53,7 @@ if __name__ == "__main__":
         
         # Gets the ranges in the provided [source_bed_path] which are of the asked type (tss or enhancer)
         # And writes the filtered one to output path
-        case [_, "getRanges", "enhancer" | "tss"  as peak_type, source_bed_path, fantom_5_peak_types_path, out_path, *args]:
+        case [_, "getRanges", "enhancer" | "tss" | "all"  as peak_type, source_bed_path, fantom_5_peak_types_path, out_path, *args]:
 
             #Parse the fantom peak type data
             peak_types = parse_fantom_peak_type_data(fantom_5_peak_types_path)
@@ -89,7 +95,7 @@ if __name__ == "__main__":
                         continue
 
                     # now check that the peak is of the requested type.
-                    if this_peak_type != peak_type:
+                    if peak_type != "all" and this_peak_type != peak_type:
                         continue
 
                     if peak_type == "tss":
@@ -201,15 +207,18 @@ if __name__ == "__main__":
                     out_file.write(f"{chromo}\t{start}\t{end}\t{peak_name}\n")
 
 
-        case [_, "typesTable", foreground_types_path, background_types_path, out_path]:
-            foreground_types = count_peak_types(foreground_types_path)
-            background_types = count_peak_types(background_types_path)
+        case [_, "typesTable", foreground_bed_path, background_bed_path, peak_types_path, out_path]:
+            
+            # Counting the types for the bed file
+            peak_types = parse_fantom_peak_type_data(peak_types_path)
+            foreground_types = count_peak_types(foreground_bed_path, peak_types)
+            background_types = count_peak_types(background_bed_path, peak_types)
 
             with open(out_path, "w") as out_file:
                 # Add the header
-                out_file.write("\t".join(["type", "foreground", "background"]) + "\n")
-                out_file.write("\t".join(["enhancer", str((foreground_types[1])), str((background_types[1]))]) + "\n")
-                out_file.write("\t".join(["tss", str((foreground_types[0])), str((background_types[0]))]) + "\n")
+                out_file.write("\t".join(["type", "foreground", "background", "unknown"]) + "\n")
+                out_file.write("\t".join(["enhancer", str((foreground_types[1])), str((background_types[1])), str((background_types[2]))]) + "\n")
+                out_file.write("\t".join(["tss", str((foreground_types[0])), str((background_types[0])), str((background_types[2]))]) + "\n")
 
         case [_, "--help"] | _:
             print("Usage:")

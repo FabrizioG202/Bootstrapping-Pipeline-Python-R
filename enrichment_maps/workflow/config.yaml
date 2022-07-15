@@ -1,6 +1,9 @@
-resolution: 100000
-bootstraps: 10000
+resolution: 100_000
+bootstraps: 1000
 
 # Cell line and Feature name are used to look for the feature file in the counts and feature folder, so make sure they match.
 cell_line: "GM12878"
-feature_type: "all"
+feature_type: CTCF
+
+# The output folder
+output_folder: ../results/enrichment_maps/
